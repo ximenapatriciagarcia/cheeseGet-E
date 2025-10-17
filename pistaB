@@ -2,51 +2,42 @@
 //controlar con el giroscopio que se vaya derecho
 //Pista B: Seguidor de lineas
 
+
 //--------Tiempo para no usar delays(a menos de ser necesario)------
 unsigned long previousMillis = 0;
 unsigned long currentMillis = 0; 
-const int intervalo = 15; //INTERVALO en milisegundos
+const int intervalo = 100; 
 
 //------Declaracion de variables-------
 
 //Puente H >>> pines ya quedaron cambiados 09/10/2025
-const int ADELANTE_1 = 3; // LLANTA 1: (ADELANTE) 3
-const int ATRAS_1 = 4;    // LLANTA 1: (ATRAS)    
-const int ATRAS_2 = 5;    // LLANTA 2: (ADELANTE)
-const int ADELANTE_2 = 6; 
+const int ADELANTE_1 = 4; // LLANTA 1: (ADELANTE) 
+const int ATRAS_1 = 5;    // LLANTA 1: (ATRAS)    
+const int ATRAS_2 = 7;    // LLANTA 2: (ADELANTE)
+const int ADELANTE_2 = 8; 
 
-const int PWM1 = 7;   
-const int PWM2 = 8;
+const int PWM1 = 3;   
+const int PWM2 = 9;
 
 //INFRARROJOS(5) Frontal=> Fn n = de izquierda a derecha
-const int F1 = 30; //   Infrarrojos frontales
-const int F2 = 34; // cambiar los pines
-const int F3 = 38;
-const int C1 = 32; //Infrarrojos centrales
-const int C2 = 36; //Se tiene que cambiar
+#define F1 22 //   Infrarrojos frontales
+#define F2 26 // cambiar los pines
+#define F3 30 
+#define C1 24 //Infrarrojos centrales
+#define C2 28 
 
 //----Variables globales para los infrarrojos-----//
 int F1E, F2E, F3E;
 int C1E, C2E;
 
 //===========Variables de velocidad ESTANDAR===============
-int vBase = 100; // Rango: entre 0 y 255
-int vGiro = 80; //suavizar a -20 
-int vSoft = 20; //se super suaviza 
+int vBase = 80; // Rango: entre 0 y 255
+int vGiro = 90; //suavizar a -20 
+int vSoft = 43; //se super suaviza 
 
 //===============FUNCIONES(cambiaran a librerias)===============
 
 //Funciones 
-
-void INFRARROJOS() {
-  F1E = digitalRead(F1);  // LOW>>blanco / HIGH>>negro
-  F2E = digitalRead(F2);
-  F3E = digitalRead(F3);
-  C1E = digitalRead(C1);
-  C2E = digitalRead(C2);
-}
-
-
 //ya cambiaron las funciones a PWM
 //--------------PUENTE H -> acciones (adelante, atras, izquierda, derecha)
 void DELANTERAS_adelante(int vB) {  // Se le da una variable de parametro en caso de modificarse en el codigo
@@ -59,15 +50,17 @@ void DELANTERAS_adelante(int vB) {  // Se le da una variable de parametro en cas
 }
 
 void DELANTERAS_atras(int vB) {  // YA ESTA
+
   digitalWrite(ADELANTE_2, LOW);   
   digitalWrite(ADELANTE_1, LOW);
   analogWrite(PWM1, vB);
   analogWrite(PWM2, vB);
   digitalWrite(ATRAS_2, HIGH); 
   digitalWrite(ATRAS_1, HIGH);
+  
 }
 
-  //-------funciones para giros--------
+//-------funciones para giros--------
 void vuelta_Izquierda() { //-------------------ya esta
   // Lado izquierdo atras, derecho adelante
   digitalWrite(ADELANTE_2, HIGH);   
@@ -86,6 +79,7 @@ void vuelta_Derecha() {  //---------------------ya esta
   digitalWrite(ATRAS_1, LOW);
   analogWrite(PWM1, 90);
   analogWrite(PWM2, 120);
+
 }
 
 //----giros--ligeros
@@ -118,9 +112,8 @@ void stop() {
   analogWrite(PWM2, 0);
 }
 
-
 //==========MAQUINA DE ESTADOS===================
-enum Estado{
+enum Estado {
   RECTA,
   IZQUIERDA,
   DERECHA,
@@ -133,55 +126,61 @@ enum Estado{
 };
 Estado EActual = RECTA;
 
-
 void newEstado() {
-
   //caso BASE de seguir la recta
   if (F1E == LOW && F2E == HIGH && F3E == LOW && C1E == LOW && C2E == LOW) {
+
     EActual = RECTA;
     return;
   }
 
   //caso de giro suave Izquierda
   if (F1E == LOW && C1E == HIGH && F2E == HIGH) { 
+
     EActual = SUAVE_IZ;        
     return;
   }                              
 
   //Caso de giro suave Derecha
-  if (F3E == LOW && C2E == HIGH && F2E == HIGH ) { // checar BIEN las separaciones entre C1/2 y el F2 y en realidad como quedan con la linea
+  if (F3E == LOW && C2E == HIGH && F2E == HIGH ) {
+
     EActual = SUAVE_DE;
     return;
   }
 
   //Caso en el que se tiene que dar VUELTA  IZQUIERDA
   if (F1E == HIGH && C1E == HIGH && F2E == HIGH) {
+
     EActual = IZQUIERDA;
     return;
   }
   
   //Caso en el que se tiene que dar vuelta   DERECHA
   if (F2E == HIGH && C2E == HIGH && F3E == HIGH){
+
     EActual = DERECHA;
     return;
   }
 
   // "Variante Nada" -> mini bonus (4,D) >> cambio de patron
   if (F1E == LOW && F2E == LOW && F3E == LOW && C1E == LOW && C2E == LOW) {
+
     EActual = VARIANTE_NADA;
     return;
   } 
 
   // "BONUS_invertido" >> central leera blanco (LOW)
-  if  (F2E == LOW && F1E == HIGH && F3E == HIGH && C1E == HIGH && C2E == HIGH){  //todos en HIGH (negro), menos el blanco
+  if (F2E == LOW && F1E == HIGH && F3E == HIGH && C1E == HIGH && C2E == HIGH){
+
     EActual = BONUS_invertido;
     return;
   }
-  EActual = ERROR; // in caso de que ninguno de los casos se cumpla
+  
+  EActual = ERROR;
 }
 
-void ACCION() {
 
+void ACCION() {  
   switch (EActual) {
     case RECTA:
       DELANTERAS_adelante(vBase);
@@ -204,56 +203,35 @@ void ACCION() {
       break;
     
     case AJUSTAR:
-
       DELANTERAS_adelante(vBase);
-
       break;
 
-    case ERROR:
-
-      stop();
-
-      break;
-
-    case VARIANTE_NADA:  //minibonus>> cambio de patron(4,D)
-
+    case VARIANTE_NADA:
       DELANTERAS_adelante(vBase);
-
       break;
 
     case BONUS_invertido:
-      if  (F2E == LOW && F1E == HIGH && F3E == HIGH && C1E == HIGH && C2E == HIGH){
+      DELANTERAS_adelante(vBase);
+      // You might want to add additional logic here for the bonus case
+      break;
 
-        DELANTERAS_adelante(vBase);
-    }
-      
-      //caso de giro suave izquierda
-      if (C1E == LOW && F2E == LOW) { 
-
-        ligero_IZ();      
-
-        return;
-      }
-
-      //caso de giro suave derecha
-      if (C2E == LOW && F2E == LOW) {
-
-        ligero_DE();
-
-        return;
-      }      
+    case ERROR:
+      stop();
       break;
   }
-
 }
 
 //====INICIA EL PROGRAMA =============
 void setup() {
+  Serial.begin(9600);
   //Motores 
   pinMode(ADELANTE_1, OUTPUT);
   pinMode(ATRAS_1, OUTPUT);
   pinMode(ADELANTE_2, OUTPUT);
   pinMode(ATRAS_2, OUTPUT);
+  //Motores PWM
+  pinMode(PWM1, OUTPUT);
+  pinMode(PWM2, OUTPUT);
   
   //Sensores Infrarrojos
   pinMode(F1, INPUT);
@@ -263,27 +241,28 @@ void setup() {
   pinMode(C2, INPUT);
 
 
-  Serial.begin(9600);
 }
 
 void loop(){
-
   currentMillis = millis();
 
   if(currentMillis - previousMillis >= intervalo){
     previousMillis = currentMillis;
 
-    INFRARROJOS();
+    F1E = digitalRead(F1);  // LOW>>blanco / HIGH>>negro
+    F2E = digitalRead(F2);
+    F3E = digitalRead(F3);
+    C1E = digitalRead(C1);
+    C2E = digitalRead(C2);
 
     newEstado();    
-
-    ACCION(); 
+    ACCION();  
 
     //Debuguear
     Serial.print("Estado:");
     Serial.print(EActual); 
 
-    Serial.print("   F1:");
+    Serial.print(" F1:");
     Serial.print(F1E);
 
     Serial.print("   F2:");

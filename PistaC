@@ -1,0 +1,399 @@
+//              ROBOT PISTA C - LABERINTO DE COLORES   
+
+// Autor: Ximena Patricia Garcia
+
+#include <Wire.h>
+#include <Adafruit_TCS34725.h>
+
+//===================== LED ====
+const int R = 3;
+const int G = 5;
+const int B = 6;
+
+//===================== Motores Puente HJ======
+const int ADELANTE_1 = 3;
+const int ATRAS_1    = 4;
+const int ATRAS_2    = 5;
+const int ADELANTE_2 = 6;
+const int PWM1 = 7;
+const int PWM2 = 8;
+
+int vBase = 180;
+int vGiro = 150;
+int vSoft = 120;
+
+//===================== Ultrasonidos ===========
+    //ULTRA Frontal
+const int trigFront = 31;
+const int echoFront = 30;
+    //ULTRA  Izquierdo
+const int trigLeft  = 46;
+const int echoLeft  = 47;
+    // ULTRA Derecho
+const int trigRight = 48;
+const int echoRight = 49;
+    // ULTRA Trasero
+const int trigBack  = 50;
+const int echoBack  = 51;
+
+//===================== INFRARREDS frontales (5) ====
+const int F1 = 22;
+const int C1 = 24;
+const int F2 = 26;
+const int C2 = 28;
+const int F3 = 29;
+
+//===================== Sensor de Color ==========
+Adafruit_TCS34725 tcs = Adafruit_TCS34725(
+  TCS34725_INTEGRATIONTIME_50MS, TCS34725_GAIN_4X
+);
+
+//===================== BMI160  =====
+#define BMI160_ADDR 0x69
+
+int16_t gx, gy, gz;
+int16_t ax, ay, az;
+
+void writeReg(uint8_t reg, uint8_t val) {
+  Wire.beginTransmission(BMI160_ADDR);
+  Wire.write(reg);
+  Wire.write(val);
+  Wire.endTransmission();
+}
+uint8_t readReg(uint8_t reg) {
+  Wire.beginTransmission(BMI160_ADDR);
+  Wire.write(reg);
+  Wire.endTransmission(false);
+  Wire.requestFrom(BMI160_ADDR, 1);
+  if (Wire.available()) return Wire.read();
+  return 0xFF;
+}
+void initGiroscopio() {
+  Wire.begin();
+  writeReg(0x7E, 0xB6); delay(200);
+  uint8_t id = readReg(0x00);
+  Serial.print("BMI160 ID: 0x"); Serial.println(id, HEX);
+  if (id != 0xD1) { Serial.println("BMI160 no se detecta"); 
+  while(1); }
+
+
+  writeReg(0x7E, 0x15); 
+  delay(100); 
+  writeReg(0x7E, 0x11); 
+  delay(100); 
+  writeReg(0x43, 0x00);             
+  writeReg(0x41, 0x03);             
+}
+
+void Giroscopio() {
+  Wire.beginTransmission(BMI160_ADDR); Wire.write(0x0C);
+  Wire.endTransmission(false); Wire.requestFrom(BMI160_ADDR, 6);
+  if (Wire.available()==6){ gx=Wire.read()|(Wire.read()<<8);
+                            gy=Wire.read()|(Wire.read()<<8);
+                
+                            gz=Wire.read()|(Wire.read()<<8); }
+
+  Wire.beginTransmission(BMI160_ADDR); Wire.write(0x12);
+
+  Wire.endTransmission(false); Wire.requestFrom(BMI160_ADDR, 6);
+
+  if (Wire.available()==6){ ax=Wire.read()|(Wire.read()<<8);
+
+                            ay=Wire.read()|(Wire.read()<<8);
+
+                            az=Wire.read()|(Wire.read()<<8); }
+}
+float Zgiroscopio() { leerGiroscopio(); return gz / 16.4; }
+
+//=================
+float medirDistancia(int trig, int echo) {
+
+  digitalWrite(trig, LOW); delayMicroseconds(2);
+  digitalWrite(trig, HIGH); delayMicroseconds(10);
+  digitalWrite(trig, LOW);
+
+  long t = pulseIn(echo, HIGH, 30000UL);
+  if (t == 0) return 999.0;
+  return t * 0.034 / 2.0;
+}
+
+
+void foquito(const String& color) {
+  if (color == "BLUE")    { analogWrite(R, 0);   
+                            analogWrite(G, 0);   
+                            analogWrite(B, 255); }
+
+  else if (color == "YELLOW"){ analogWrite(R, 255); analogWrite(G, 255); analogWrite(B, 0); }
+
+  else if (color == "PINK")  { analogWrite(R, 255); 
+                                analogWrite(G, 0);   
+                                analogWrite(B, 127); }
+
+  else if (color == "GREEN") { analogWrite(R, 0);   analogWrite(G, 255); analogWrite(B, 0); }
+
+  else if (color == "RED")   { analogWrite(R, 255);  analogWrite(G, 0);   analogWrite(B, 0); }
+  
+  else                       { analogWrite(R, 0);   analogWrite(G, 0);   analogWrite(B, 0); }
+}
+
+
+
+//FUNCIONES DE LOGICA----------------------------------------------
+bool innfraredTODosNegro() {
+  int F1 = digitalRead(F1);
+  int C1 = digitalRead(G1);
+  int F2 = digitalRead(F2);
+  int C2 = digitalRead(G2);
+  int F3 = digitalRead(F3);
+
+  return (s1==LOW && s2==LOW && s3==LOW && s4==LOW && s5==LOW);
+}
+
+//===================== motores =================
+void DELANTERAS_adelante(int vB) {
+
+  digitalWrite(ADELANTE_2, HIGH);
+  digitalWrite(ADELANTE_1, HIGH);
+  analogWrite(PWM1, vB);
+  analogWrite(PWM2, vB);
+  digitalWrite(ATRAS_2, LOW);
+  digitalWrite(ATRAS_1, LOW);
+}
+void DELANTERAS_atras(int vB) {
+
+  digitalWrite(ADELANTE_2, LOW);
+  digitalWrite(ADELANTE_1, LOW);
+  analogWrite(PWM1, vB);
+  analogWrite(PWM2, vB);
+  digitalWrite(ATRAS_2, HIGH);
+  digitalWrite(ATRAS_1, HIGH);
+}
+void vuelta_Izquierda() {
+
+  digitalWrite(ADELANTE_2, HIGH);
+  digitalWrite(ADELANTE_1, LOW);
+  analogWrite(PWM1, 120);
+  analogWrite(PWM2, 90);
+  digitalWrite(ATRAS_2, LOW);
+  digitalWrite(ATRAS_1, HIGH);
+}
+void vuelta_Derecha() {
+
+  digitalWrite(ADELANTE_2, LOW);
+  digitalWrite(ADELANTE_1, HIGH);
+  analogWrite(PWM1, 90);
+  analogWrite(PWM2, 120);
+  digitalWrite(ATRAS_2, HIGH);
+  digitalWrite(ATRAS_1, LOW);
+}
+void stopMotores() {
+
+  digitalWrite(ADELANTE_2, LOW);
+  digitalWrite(ADELANTE_1, LOW);
+  analogWrite(PWM1, 0);
+  analogWrite(PWM2, 0);
+  digitalWrite(ATRAS_2, LOW);
+  digitalWrite(ATRAS_1, LOW);
+}
+
+//===================== Sensor de color TCS34725 =====================//
+String SColor() {
+
+  uint16_t r,g,b,c; tcs.getRawData(&r,&g,&b,&c); if(c==0) c=1;
+  float red=(float)r/c*255.0, green=(float)g/c*255.0, blue=(float)b/c*255.0;
+  if (red>120 && green<100 && blue<100) return "RED";
+
+  else if (red<100 && green>120 && blue < 100) return "GREEN";
+
+  else if (red<100 && green < 100 && blue > 120) return "BLUE";
+
+  else if (red>150 && green > 120 && blue < 80)  return "YELLOW";
+
+  else return "NINGUNO";
+}
+
+//===================== Memoria del robotzin ===========
+String M[4][4] = {
+        //   1,  2,   3,  4 
+        //1    {"", "", "", ""},
+        //2    {"INICIO", "", "", ""},
+        //3    {"", "", "", ""},
+        //4    {"", "", "", "FINAL"}
+};
+
+
+int fila = 2;  // INICIO (2,1)
+int columna = 1;
+bool primerColorGuardado = false;
+String primerColorTrasInicio = "";
+
+
+// GUARDAR los datos leidos
+void celdaActual(const String& tag) {
+  int fi = fila -1, co = columna -1;
+
+  if (M[fi][co]=="" || M[fi][co]=="VISITADO") M[fi][co]=tag;
+}
+
+
+//=====================se reduce matriz ========
+//
+void reducir() {
+  int targetFila = 4;
+  int targetCol  = 4;
+//   moverse hacia abajo
+  if (fila < targetFila) fila++;
+//   mantener abajo si ya he llegado  casi al final de la pista
+  if (columna < targetCol) columna++;
+  // se supone que ya llegamos abajo
+}
+
+//===================== Logica de color para transiciones ============
+void transicionPorColor(const String& color) {
+
+  if (!primerColorGuardado && estado != INICIO_E && color != "NINGUNO" && color != "GREEN") {
+    primerColorTrasInicio = color;
+    primerColorGuardado = true;
+  }
+  if (color == "RED") estado = SyB; // para checkpoint
+}
+
+//===================== decidir by ultrasonicos ==============
+void vueltasUltrasonicas(float dF, float dL, float dR, float dB) {
+
+  if (dF <= 12 && dL <= 15 && dR <= 15) {
+    celdaActual("T");
+
+    if (dB > 15) { DELANTERAS_atras(vBase); 
+                  delay(350); return; }
+
+    else { stopMotores();   
+          estado = BLOQUEADO; return; }
+  }
+
+  if (dF >12) { DELANTERAS_adelante(vSoft); return; }
+
+  if (dR >15 && dL <=15) { vuelta_Derecha(); 
+                        delay(300); 
+              if (columna<4) columna++; 
+                            return; }
+
+  if (dL >15 && dR <=15) { vuelta_Izquierda(); 
+                                delay(300); 
+                                if (columna>1) columna--; 
+                                return; }
+
+  if (dL >15 && dR >15) { vuelta_Derecha(); delay(300); 
+                                  if (columna<4) columna++; 
+                                  return; }
+
+  if (dB >15) { DELANTERAS_atras(vSoft);
+                        delay(250); 
+                        } else { stopMotores(); }
+}
+
+//============ maquina de Estados =============
+enum Estado { INICIO_E, 
+        RECORRIDO,
+        SyB, 
+        BLOQUEADO, 
+        FINAL_E };
+Estado estado = INICIO_E;
+
+
+//===================== Cambio de Estado =================
+void ACCION(Estado e, const String& color) {
+  foquito(color);
+  float dFront = medirDistancia(trigFront,echoFront);
+
+  float dLeft = medirDistancia(trigLeft, echoLeft);
+
+  float dRight = medirDistancia(trigRight,echoRight);
+
+  float dBack = medirDistancia(trigBack, echoBack);
+
+  if (todosIRNegro()) marcarCeldaActual("NEGRO");
+  reducirHacia44();
+
+  switch() {
+    case INICIO_E:
+      DELANTERAS_adelante(vBase);
+
+      break;
+    case RECORRIDO:
+      decidirMovimientoPorUltras(dFront,dLeft,dRight,dBack);
+      if (dFront>12 && fila<4) fila++;
+
+      break;
+    case SyB: {
+      float z=Zgiroscopio();
+      if (z>20) DELANTERAS_adelante(vBase); // ojo con z ver si si lo dejare asi
+      else if (z<-20) DELANTERAS_atras(vBase);
+      if (fila<4) fila++; if (columna<4) columna++;
+      if (fila==4 && columna==4) estado=FINAL_E;
+
+      break;
+    }
+    case BLOQUEADO:
+      stopMotores(); 
+      break;
+
+    case FINAL_E:
+      stopMotores(); 
+      break;
+  }
+}
+
+
+//-------------------------------------------------------------------------------------Inicia el programa
+//INICIALIZACION DEL SET UP
+void setup() {
+  Serial.begin(115200);
+  Wire.begin();
+
+  pinMode(R,OUTPUT); 
+  pinMode(G,OUTPUT); 
+  pinMode(B,OUTPUT);
+
+
+//MOTORES
+  pinMode(ADELANTE_1,OUTPUT); pinMode(ATRAS_1,OUTPUT);
+  pinMode(ADELANTE_2,OUTPUT); pinMode(ATRAS_2,OUTPUT);
+  pinMode(PWM1,OUTPUT); pinMode(PWM2,OUTPUT);
+
+//ultrasonicos
+
+  pinMode(trigFront,OUTPUT); pinMode(echoFront, INPUT);
+  pinMode(trigLeft,OUTPUT);  pinMode(echoLeft,  INPUT);
+  pinMode(trigRight,OUTPUT); pinMode(echoRight, INPUT);
+  pinMode(trigBack,OUTPUT);  pinMode(echoBack,  INPUT);
+
+//infrarrojos
+  pinMode(F1, INPUT_PULLUP); pinMode(C1, INPUT_PULLUP);
+  pinMode(F2, INPUT_PULLUP); pinMode(C2, INPUT_PULLUP);
+  pinMode(F3, INPUT_PULLUP);
+
+//giroscopio
+  Giroscopio();
+  if (!tcs.begin()) { Serial.println("no se detecta TCS34725"); 
+        while(1); }
+  Serial.println("giroscopio listo");
+}
+
+//=LOOOP
+void loop() {
+  String color=SColor();
+  transicionPorColor(color);
+  if (estado==INICIO_E && color!="GREEN" && color!="NINGUNO") estado=RECORRIDO;
+  ACCION(estado,color);
+
+
+
+//debogueo
+  Serial.print("posicion("); Serial.print(fila);Serial.print(columna);
+
+  Serial.print("estado: "); Serial.print(estado);
+  
+  Serial.print("primerColor: "); Serial.println(primerColorTrasInicio);
+  delay(120);
+}

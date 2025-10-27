@@ -1,7 +1,9 @@
+#include <Wire.h>
 #include <Adafruit_TCS34725.h> //Sensor de color abajo I2C
 Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS34725_GAIN_1X);
 #include <NewPing.h>  //libreria para los ultrasonicos
 #include <Servo.h> //Libreria Servo
+
 
 //AUTHOR: Ximena Patricia Garcia Magdaleno
 //Pista A: banderas AMARILLA:  kick y CELESTE:drop
@@ -46,11 +48,12 @@ unsigned long kickStart = 0;
 bool kicking = false;
 
 //============Variables====================Sensor de Color "naranja"
-const int S0 = 43;
-const int S1 = 41;
-const int S2 = 44;
-const int S3 = 46;
-const int sensorOut = 42;
+#define S0 43
+#define S1 41
+#define S2 44
+#define S3 46
+#define OUT 42
+
 
 //-------------------------Funiones Puentes H---------------------------------------------------------
 void DELANTERAS_adelante(int vB) {  // Se le da una variable de parametro en caso de modificarse en el codigo
@@ -126,7 +129,8 @@ void stop() {
 }
 
 //==========================Funcion de color - TCS34725
-String color(){
+//falta que regrese "GREEN", "BLUE", "YELLOW", "RED"
+String Lcolor(){
   uint16_t R,G,B,C;
   tcs.getRawData(&R,&G,&B,&C);
 
@@ -139,7 +143,15 @@ String color(){
 }
 
 
-//========================Funcion Naranja
+//========================Funciones "Naranja"
+unsigned long leerCanal(bool s2, bool s3) {
+  digitalWrite(S2, s2 ? HIGH : LOW);
+  digitalWrite(S3, s3 ? HIGH : LOW);
+  unsigned long t = pulseIn(OUT, LOW, 50000UL);
+  if (t == 0) t = 50000UL;
+  return t;
+}
+//funcion principal
 String Naranja(){
   digitalWrite(S0, HIGH);
   digitalWrite(S1, LOW);
@@ -164,7 +176,7 @@ void leerUltrasonicos(float &dFront, float &dLeft, float &dRight) {
         if (dRight == 0) dRight = 999;
 }
 
-//--------------------------Funciones de logica------------
+//-------------------------------------------FUNCIONES DE LOGICA-------------------
 enum Estado {
   INICIO,
   BUSQUEDA, //solamente avanzarhasta tener la pelota y cerrar garra
@@ -243,13 +255,13 @@ void recorrido(String color, String naranja, float dFront,float dLeft,float dRig
 
   case RECORRIDO: 
     leerUltrasonicos(dFront, dLeft, dRight); //refrescamos la lectra de los U
-    color = color(); //se tiene que actualizar la lectura dentro del case
+    color = Lcolor(); //se tiene que actualizar la lectura dentro del case
 
     if (color != "BLUE" && color != "YELLOW"){
 
       //primer if: vuelta a la derecha
       if (dFront < 5 && dRight > 5){ //asi entonces aunque vatya recorriendo solo tomara la salida en que ladintacnia sea mas larga para dar vuelta
-        vuelta_DERECHA();
+        vuelta_Derecha();
         delay(500); //ver si es suficiente delay para dar la vuelta
       } else{
         DELANTERAS_adelante(vBase);
@@ -257,7 +269,7 @@ void recorrido(String color, String naranja, float dFront,float dLeft,float dRig
 
       //segundo if vuelta a la IZQUIERDA
       if (dFront < 5 && dLeft > 5){ 
-        vuelta_IZQUIERDA();
+        vuelta_Izquierda();
         delay(500); //ver si es suficiente delay para dar la vuelta
       } else{
         DELANTERAS_adelante(vBase);
@@ -300,7 +312,7 @@ void loop() {
   leerUltrasonicos(dFront,dLeft,dRight);
 
   //variables para Maquina de Estados
-  String TutiColor = color();
+  String TutiColor = Lcolor();
   String naranja = Naranja();
 
 

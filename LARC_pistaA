@@ -291,10 +291,20 @@ void recorrido(String color, String naranja, float dFront,float dLeft,float dRig
 //--------------INICIALIZACION DEL PROGRAMA----------------
 
 void setup() {
+  //Punestes H
+  pinMode(ADELANTE_1, OUTPUT);
+  pinMode(ATRAS_1, OUTPUT);
+  pinMode(ADELANTE_2, OUTPUT);
+  pinMode(ATRAS_2, OUTPUT);
+  pinMode(PWM1, OUTPUT);
+  pinMode(PWM2, OUTPUT);
+  //-----------------------------------------------------------puentes H
 
+//servo
   Serial.begin(115200);
-  garra.attach(servo_pin); //servo >>> garra
+  garra.attach(servo_pin); //servo >>> garra // es el pin 10
 
+//Sensor de Color
   if(tcs.begin()){
     Serial.println("INICIALIZADO: Sensor de color TCS34725");
     delay(2000);
@@ -302,7 +312,7 @@ void setup() {
   else{
     Serial.println("Error");
   }
-
+//-------------------------------------------------------Sensor de Color
 }
 
 

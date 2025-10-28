@@ -18,11 +18,11 @@ Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS3472
 //-------------------------Delcaracion de variables--------------------------------
 //====Puentes H
 const int ADELANTE_1 = 4; // LLANTA 1: (ADELANTE) 
-const int ATRAS_1 = 5;    // LLANTA 1: (ATRAS)    
-const int ATRAS_2 = 8;    // LLANTA 2: (ADELANTE)
-const int ADELANTE_2 = 7;
+const int ATRAS_1 = 11;    // LLANTA 1: (ATRAS)    
+const int ATRAS_2 = 7;    // LLANTA 2: (ADELANTE)
+const int ADELANTE_2 = 8;
 
-const int PWM1 = 3;   
+const int PWM1 = 2;   
 const int PWM2 = 9;
 
 //=================================================Variables de velocidad ESTANDAR
@@ -31,27 +31,42 @@ int vBase = 60; //le bajede 85 a 60, para que sea un recorrido suave
 int vGiro = 85; //estandar para giros
 int vSoft = 70; //
 
+
+/*     EN ESTA PISTA NO SE NECESITA EL SERVO
 //================Variables=========================Servo
 Servo garra; //creo el objeto para servo
 const int servo_pin = 10;
+*/
+
+
 
 //================Variables=========================Ultrasonicos
 #define MAX_DISTANCE 200 //si hay algo mas lejos que esta distancia el sensorlo ignora
-const int trigPinFront = 10;
-const int echoPinFront = 11;
+const int trigPinFront = 39;
+const int echoPinFront = 38;
 
-const int trigPinLeft  = 12;
-const int echoPinLeft  = 13;
+//Ultrasonico de LEFT
+const int trigPinLeft  = 37;
+const int echoPinLeft  = 36;
 
-const int trigPinRight = 14;
-const int echoPinRight = 15;
+//Ultrasonico de RIGHT
+const int trigPinRight = 33;
+const int echoPinRight = 32;
+
+//Ultrasonico Back
+const int trigPinBack = 35;
+const int echoPinBack = 34;
 
 NewPing sonarFront(trigPinFront, echoPinFront, MAX_DISTANCE);
 NewPing sonarLeft(trigPinLeft, echoPinLeft, MAX_DISTANCE);
 NewPing sonarRight(trigPinRight, echoPinRight, MAX_DISTANCE);
+NewPing sonarBack(trigPinBack, echoPinBack, MAX_DISTANCE);
 
+
+/*   en esto no se ocupa porque no hay servo y no hay millis
 unsigned long kickStart = 0;
 bool kicking = false;
+*/
 
 
 //=======================Variables ARRAY===========INFRARROJOS(5)>>>>"TODOS NEGRO"
@@ -86,6 +101,7 @@ void DELANTERAS_adelante(int vB) {  // Se le da una variable de parametro en cas
   analogWrite(PWM1, vB);
   analogWrite(PWM2, vB);
 }
+
 
 void DELANTERAS_atras(int vB) {  // YA ESTA
 
@@ -150,12 +166,12 @@ void stop() {
   analogWrite(PWM2, 0);
 }
 
-
+/*
 //===================================================
 //=========Funcion de COLOR - TCS34725===============
 //===================================================
 //falta que regrese "GREEN", "BLUE", "YELLOW", "RED"
-/*
+
 String Lcolor(){
   uint16_t R,G,B,C;
   tcs.getRawData(&R,&G,&B,&C); //ver si con .getEGB() o con .getRawData()
@@ -173,6 +189,7 @@ String Lcolor(){
   delay(300);
 }
 */
+
 String Lcolor(){
   float red,green,blue;
   tcs.getRGB(&red,&green,&blue);
@@ -226,8 +243,7 @@ enum Estado {
 };
 Estado EActual = INICIO;
 
-void recorrido(String color, float dFront,float dLeft,float dRight){
-
+void recorrido(String color, float dFront,float dLeft,float dRight, float dBack){
   switch(EActual){
 
   case INICIO:
@@ -238,7 +254,7 @@ void recorrido(String color, float dFront,float dLeft,float dRight){
 
   case RECORRIDO: //En el laberinto la navegacion es la funcion principal
 
-    leerUltrasonicos(dFront, dLeft, dRight); //refrescamos la lectra de los U
+    leerUltrasonicos(dFront, dLeft, dRight, dBack); //refrescamos la lectra de los U
     color = Lcolor(); //Tiene que cambiarse tambien por para mostrar el color
 
     //ARRAY infrarrojos
@@ -247,13 +263,13 @@ void recorrido(String color, float dFront,float dLeft,float dRight){
 
 
     if (!negro){
-      giro(dFront, dLeft, dRight);//Incluye: derecha, izquierda,atras, else adelante
+      giro(dFront, dLeft, dRight, dBack);//Incluye: derecha, izquierda,atras, else adelante
     } 
     else {
         DELANTERAS_atras(70);
         delay(300); //suficiente para que salga
 
-        giro(dFront, dLeft, dRight); 
+        giro(dFront, dLeft, dRight, dBack); 
     }
   break;
 
@@ -265,7 +281,7 @@ void recorrido(String color, float dFront,float dLeft,float dRight){
   }
 }
 //-----Funcion de navegacion para Maquina de Estados
-void giro(float dFront, float dLeft, float dRight){
+void giro(float dFront, float dLeft, float dRight, float dBack){
 //funcion para dar giros
   //primer if: vuelta a la DERECHA
   if (dFront < 5 && dRight > 5){ //asi entonces aunque vatya recorriendo solo tomara la salida en que ladintacnia sea mas larga para dar vuelta
@@ -335,19 +351,21 @@ void setup() {
 
 
 void loop() {
+
   //Variables Ultrasonicas y funcion
-  float dFront,dLeft,dRight;
-  leerUltrasonicos(dFront,dLeft,dRight);
+  float dFront,dLeft,dRight,dBack;
+  leerUltrasonicos(dFront,dLeft,dRight,dBack);
 
   //variables para Maquina de Estados
   //sensor de color
   String TutiColor = Lcolor();
+
   //infrarrojos
   leerINFRAS(); //se leen los infrarrojos, que permite que se actualice la funcion "TODOS NEGROS"
 
 
   //Maquina de Estados
-  recorrido(TutiColor, dFront,dLeft,dRight); //tal vez solo necesite el frontal aqui
+  recorrido(TutiColor, naranja, dFront,dLeft,dRight,dBack); //tal vez solo necesite el frontal aqui
 
 
 }

@@ -1,6 +1,6 @@
 #include <Wire.h>
 #include <Adafruit_TCS34725.h> //Sensor de color abajo I2C
-Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS34725_GAIN_1X);
+Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS34725_GAIN_1X); //objeto del sensor de color
 #include <NewPing.h>  //libreria para los ultrasonicos
 #include <Servo.h> //Libreria Servo
 
@@ -53,24 +53,21 @@ NewPing sonarRight(trigPinRight, echoPinRight, MAX_DISTANCE);
 unsigned long kickStart = 0;
 bool kicking = false;
 
-//============Variables==================================Sensor de Color "naranja"
-#define S0 43
-#define S1 41
-#define S2 44
-#define S3 46
-#define OUT 42
-
 
 //=======================Variables ARRAY===========INFRARROJOS(5)>>>>"TODOS NEGRO"
 const int numInfra = 5;
 const int pinesIR[numInfra] = {22,24,26,28,30};
 int lecturas[numInfra];
 
+
+//-----------------------------
 // Funcion lectura INFRARROJOS
+//-----------------------------
   void leerINFRAS() {
     for (int i = 0; i < numInfra; i++) {
       lecturas[i] = digitalRead(pinesIR[i]); // guarda 0 o 1
     }
+  }
 //--------------Funcion infrarrojos "TODOS NEGRO"
 bool todosNEGROS(){
   for (int i = 0; i < numInfra; i++) {
@@ -153,18 +150,60 @@ void stop() {
   analogWrite(PWM2, 0);
 }
 
-//==========================Funcion de color - TCS34725
+
+//===================================================
+//=========Funcion de COLOR - TCS34725===============
+//===================================================
 //falta que regrese "GREEN", "BLUE", "YELLOW", "RED"
+/*
 String Lcolor(){
   uint16_t R,G,B,C;
-  tcs.getRawData(&R,&G,&B,&C);
+  tcs.getRawData(&R,&G,&B,&C); //ver si con .getEGB() o con .getRawData()
 
-  analogWrite(3, R); // de una vez lo muestro en el Led para practicar
+  if (R > G && R > B) return "RED";
+  if (G > R && G > B) return "GREEN";
+  if (B > R && B > G) return "BLUE";
+  if (R > 300 && G > 300) return "YELLOW";
+
+  analogWrite(3, R); // de una vez lo muestro en el RGB para practicar
   analogWrite(5, G);
   analogWrite(6, B);
 
   Serial.println(" R =" + String(R)+ "G = "+String(G) + " B = " +String(B));
   delay(300);
+}
+*/
+String Lcolor(){
+  float red,green,blue;
+  tcs.getRGB(&red,&green,&blue);
+  int R = int(red);
+  int G = int(green);
+  int B = int(blue);
+
+  Serial.print("R: "); Serial.print(R);
+  Serial.print("  G: "); Serial.print(G);
+  Serial.print("  B: "); Serial.println(B);
+
+  String color = "";
+
+  if((R-G>50)&(R-B>50)){
+    color = "RED";
+
+  }
+  else if((R-G>10)&(R-B>30)){
+    color = "GREEN";
+
+  }
+  else if((R-G>20)&(R-B>40)){
+    color = "BLUE";
+
+  }
+  else if((R-G>40)&(R-B>40)){
+    color = "YELLOW";
+
+  }
+
+  return color;
 }
 
 
@@ -187,7 +226,7 @@ enum Estado {
 };
 Estado EActual = INICIO;
 
-void recorrido(String color, String naranja, float dFront,float dLeft,float dRight){
+void recorrido(String color, float dFront,float dLeft,float dRight){
 
   switch(EActual){
 
@@ -204,7 +243,7 @@ void recorrido(String color, String naranja, float dFront,float dLeft,float dRig
 
     //ARRAY infrarrojos
     leerINFRAS();
-    negro = todosNEGROS();
+    bool negro = todosNEGROS();
 
 
     if (!negro){
@@ -225,7 +264,7 @@ void recorrido(String color, String naranja, float dFront,float dLeft,float dRig
 
   }
 }
-//-----Funcion de navegacion para Maquina de estados
+//-----Funcion de navegacion para Maquina de Estados
 void giro(float dFront, float dLeft, float dRight){
 //funcion para dar giros
   //primer if: vuelta a la DERECHA
@@ -244,7 +283,7 @@ void giro(float dFront, float dLeft, float dRight){
     DELANTERAS_atras(70);
     delay(300); //suficiente para que salga
 
-  } else{
+  } else{ //Else avanza adelante
       DELANTERAS_adelante(vBase); // velocidad Base
     }
 }
@@ -257,28 +296,42 @@ void giro(float dFront, float dLeft, float dRight){
 //-------------------------------INICIALIZACION DEL PROGRAMA-------------------------
 
 void setup() {
+  //Punestes H
+  pinMode(ADELANTE_1, OUTPUT);
+  pinMode(ATRAS_1, OUTPUT);
+  pinMode(ADELANTE_2, OUTPUT);
+  pinMode(ATRAS_2, OUTPUT);
+  pinMode(PWM1, OUTPUT);
+  pinMode(PWM2, OUTPUT);
+  //-------------------------------------------------puentes H
 
+//----------------Servo
   Serial.begin(115200);
   garra.attach(servo_pin); //servo >>> garra
 
+
+//Sensor de color
   if(tcs.begin()){
     Serial.println("INICIALIZADO: Sensor de color TCS34725");
     delay(2000);
   }
   else{
     Serial.println("Error");
+    while(1);
   }
+//------------------------------------------------------Sensor de color
+
 
 //lectura de ARRAY infrarrojos
 
-   for (int i = 0; i < numInfra; i++) {
+  for (int i = 0; i < numInfra; i++) {
     pinMode(pinesIR[i], INPUT);
   }
 
   Serial.println("Lectura de INFRARROJOS lista");
   }
 
-}
+
 
 
 void loop() {
@@ -294,7 +347,7 @@ void loop() {
 
 
   //Maquina de Estados
-  recorrido(TutiColor, naranja, dFront,dLeft,dRight); //tal vez solo necesite el frontal aqui
+  recorrido(TutiColor, dFront,dLeft,dRight); //tal vez solo necesite el frontal aqui
 
 
 }

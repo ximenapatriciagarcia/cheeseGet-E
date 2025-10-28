@@ -92,6 +92,12 @@ bool todosNEGROS(){
 }
 
 
+//------------------RGB
+int Rojillo = 52;       //van a cambiar porque no son PWM
+int Verdesillo = 50;
+int Azulillo = 53;
+
+
 //-------------------------Funiones Puentes H---------------------------------------------------------
 void DELANTERAS_adelante(int vB) {  // Se le da una variable de parametro en caso de modificarse en el codigo
   digitalWrite(ADELANTE_2, HIGH);   
@@ -203,29 +209,44 @@ String Lcolor(){
 
   String color = "";
 
-  if((R-G>50)&(R-B>50)){
+  if ((R - G > 50) & (R - B > 50)) {
     color = "RED";
-
   }
-  else if((R-G>10)&(R-B>30)){
+
+  if ((G - B > 10) & (G - R > 30)) {
     color = "GREEN";
-
   }
-  else if((R-G>20)&(R-B>40)){
+
+  if ((B - G > 20) & (B - R > 40)) {
     color = "BLUE";
-
   }
-  else if((R-G>40)&(R-B>40)){
+
+  if ((R - B > 10) & (G - B > 20)) {
     color = "YELLOW";
-
   }
+  if ((R > 200) & (B > 150) & (G < 120)) {
+    color = "PINK";
+  }
+
+
+  analogWrite(Rojillo, R);
+  analogWrite(Verdesillo, G);
+  analogWrite(Azulillo, B);
+
+  Serial.print("R: "); Serial.print(R);
+  Serial.print("  G: "); Serial.print(G);
+  Serial.print("  B: "); Serial.print(B);
+  Serial.print("  Color: "); Serial.println(color);
+
+  delay(300);
+
 
   return color;
 }
 
 
 //==================================================Funcion para leer ultrasonicos
-void leerUltrasonicos(float &dFront, float &dLeft, float &dRight) {
+void leerUltrasonicos(float &dFront, float &dLeft, float &dRight, float &dBack) {
   
   dFront = sonarFront.ping_cm(); 
         if (dFront == 0) dFront = 999; //se supone es la distancia maxima
@@ -233,6 +254,9 @@ void leerUltrasonicos(float &dFront, float &dLeft, float &dRight) {
         if (dLeft  == 0) dLeft  = 999;
   dRight = sonarRight.ping_cm(); 
         if (dRight == 0) dRight = 999;
+  dBack = sonarBack.ping_cm(); 
+        if (dBack == 0) dBack = 999;
+    
 }
 
 //-------------------------------------------FUNCIONES DE LOGICA-------------------
@@ -323,7 +347,6 @@ void setup() {
 
 //----------------Servo
   Serial.begin(115200);
-  garra.attach(servo_pin); //servo >>> garra
 
 
 //Sensor de color
@@ -365,7 +388,7 @@ void loop() {
 
 
   //Maquina de Estados
-  recorrido(TutiColor, naranja, dFront,dLeft,dRight,dBack); //tal vez solo necesite el frontal aqui
+  recorrido(TutiColor, dFront,dLeft,dRight,dBack); //tal vez solo necesite el frontal aqui
 
 
 }

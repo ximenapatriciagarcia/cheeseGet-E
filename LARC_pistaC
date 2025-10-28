@@ -16,6 +16,11 @@ Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS3472
 //COLORES: Azul (fuerte), amarillo, rosa, rojo (checkpoint), verde (inicio && final final)
 
 //-------------------------Delcaracion de variables--------------------------------
+//------------------RGB
+int Rojillo = 52;       //van a cambiar porque no son PWM
+int Verdesillo = 50;
+int Azulillo = 53;
+
 //====Puentes H
 const int ADELANTE_1 = 4; // LLANTA 1: (ADELANTE) 
 const int ATRAS_1 = 11;    // LLANTA 1: (ATRAS)    
@@ -92,10 +97,6 @@ bool todosNEGROS(){
 }
 
 
-//------------------RGB
-int Rojillo = 52;       //van a cambiar porque no son PWM
-int Verdesillo = 50;
-int Azulillo = 53;
 
 
 //-------------------------Funiones Puentes H---------------------------------------------------------

@@ -10,6 +10,12 @@ Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS3472
 //Sensores: Servo, Color frontal, Color abajo, cuatro ultrasonicos, Puentes H
 
 //-------------------------Delcaracion de variables--------------------------------
+//------------------RGB
+int Rojillo = 52;       //van a cambiar porque no son PWM
+int Verdesillo = 50;
+int Azulillo = 53;
+
+
 //====Puentes H
 const int ADELANTE_1 = 4; // LLANTA 1: (ADELANTE) 
 const int ATRAS_1 = 11;    // LLANTA 1: (ATRAS)    
@@ -18,6 +24,7 @@ const int ADELANTE_2 = 8;
 
 const int PWM1 = 2;   
 const int PWM2 = 9;
+
 
 //=================================================Variables de velocidad ESTANDAR
 int vBase = 60; //le bajede 85 a 60, para que sea un recorrido suave
@@ -145,15 +152,49 @@ void stop() {
 //==========================Funcion de color - TCS34725
 //falta que regrese "GREEN", "BLUE", "YELLOW", "RED"
 String Lcolor(){
-  uint16_t R,G,B,C;
-  tcs.getRawData(&R,&G,&B,&C);
+   float red,green,blue;
+  tcs.getRGB(&red,&green,&blue);
+  int R = int(red);
+  int G = int(green);
+  int B = int(blue);
 
-  analogWrite(3, R); // de una vez lo muestro en el Led para practicar
-  analogWrite(5, G);
-  analogWrite(6, B);
+  Serial.print("R: "); Serial.print(R);
+  Serial.print("  G: "); Serial.print(G);
+  Serial.print("  B: "); Serial.println(B);
 
-  Serial.println(" R =" + String(R)+ "G = "+String(G) + " B = " +String(B));
+  String color = "";
+
+  if ((R - G > 50) & (R - B > 50)) {
+    color = "RED";
+  }
+
+  if ((G - B > 10) & (G - R > 30)) {
+    color = "GREEN";
+  }
+
+  if ((B - G > 20) & (B - R > 40)) {
+    color = "BLUE";
+  }
+
+  if ((R - B > 10) & (G - B > 20)) {
+    color = "YELLOW";
+  }
+
+
+
+  analogWrite(Rojillo, R);
+  analogWrite(Verdesillo, G);
+  analogWrite(Azulillo, B);
+
+  Serial.print("R: "); Serial.print(R);
+  Serial.print("  G: "); Serial.print(G);
+  Serial.print("  B: "); Serial.print(B);
+  Serial.print("  Color: "); Serial.println(color);
+
   delay(300);
+
+
+  return color;
 }
 
 
@@ -183,13 +224,15 @@ String Naranja(){
 void leerUltrasonicos(float &dFront, float &dLeft, float &dRight, float &dBack) {
   
   dFront = sonarFront.ping_cm(); 
-        if (dFront == 0) dFront = 999; //se supone es la distancia maxima
+        if (dFront == 0) dFront = 999; //se evitan lecturas en falso
   dLeft  = sonarLeft.ping_cm();  
         if (dLeft  == 0) dLeft  = 999;
   dRight = sonarRight.ping_cm(); 
         if (dRight == 0) dRight = 999;
   dBack = sonarBack.ping_cm(); 
-        if (dBack == 0) dBack = 999;}
+        if (dBack == 0) dBack = 999;
+    
+    }
 
 
 
@@ -334,6 +377,7 @@ void setup() {
 
 
 void loop() {
+
   //Variables Ultrasonicas y funcion
   float dFront,dLeft,dRight,dBack;
   leerUltrasonicos(dFront,dLeft,dRight,dBack);

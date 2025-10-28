@@ -12,11 +12,11 @@ Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS3472
 //-------------------------Delcaracion de variables--------------------------------
 //====Puentes H
 const int ADELANTE_1 = 4; // LLANTA 1: (ADELANTE) 
-const int ATRAS_1 = 5;    // LLANTA 1: (ATRAS)    
-const int ATRAS_2 = 8;    // LLANTA 2: (ADELANTE)
-const int ADELANTE_2 = 7;
+const int ATRAS_1 = 11;    // LLANTA 1: (ATRAS)    
+const int ATRAS_2 = 7;    // LLANTA 2: (ADELANTE)
+const int ADELANTE_2 = 8;
 
-const int PWM1 = 3;   
+const int PWM1 = 2;   
 const int PWM2 = 9;
 
 //=================================================Variables de velocidad ESTANDAR
@@ -31,14 +31,25 @@ const int servo_pin = 10;
 
 //================Variables=========================Ultrasonicos
 #define MAX_DISTANCE 200 //si hay algo mas lejos que esta distancia el sensorlo ignora
-const int trigPinFront = 10;
-const int echoPinFront = 11;
 
-const int trigPinLeft  = 12;
-const int echoPinLeft  = 13;
+//De izquierda a derecha >>> GARRA AL FRENTE
 
-const int trigPinRight = 14;
-const int echoPinRight = 15;
+
+//Ultrasonico de FRONTAL
+const int trigPinFront = 39;
+const int echoPinFront = 38;
+
+//Ultrasonico de LEFT
+const int trigPinLeft  = 37;
+const int echoPinLeft  = 36;
+
+//Ultrasonico de RIGHT
+const int trigPinRight = 33;
+const int echoPinRight = 32;
+
+//Ultrasonico Back
+const int trigPinBack = 35;
+const int echoPinBack = 34;
 
 NewPing sonarFront(trigPinFront, echoPinFront, MAX_DISTANCE);
 NewPing sonarLeft(trigPinLeft, echoPinLeft, MAX_DISTANCE);
@@ -49,7 +60,7 @@ bool kicking = false;
 
 //============Variables====================Sensor de Color "naranja"
 #define S0 43
-#define S1 41
+#define S1 45
 #define S2 44
 #define S3 46
 #define OUT 42

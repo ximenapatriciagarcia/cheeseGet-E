@@ -47,20 +47,20 @@ const int servo_pin = 10;
 
 //================Variables=========================Ultrasonicos
 #define MAX_DISTANCE 200 //si hay algo mas lejos que esta distancia el sensorlo ignora
-const int trigPinFront = 39;
-const int echoPinFront = 38;
+const int trigPinFront = 35;
+const int echoPinFront = 34;
 
 //Ultrasonico de LEFT
-const int trigPinLeft  = 37;
-const int echoPinLeft  = 36;
+const int trigPinLeft  = 33;
+const int echoPinLeft  = 32;
 
 //Ultrasonico de RIGHT
-const int trigPinRight = 33;
-const int echoPinRight = 32;
+const int trigPinRight = 37;
+const int echoPinRight = 36;
 
 //Ultrasonico Back
-const int trigPinBack = 35;
-const int echoPinBack = 34;
+const int trigPinBack = 39;
+const int echoPinBack = 38;
 
 NewPing sonarFront(trigPinFront, echoPinFront, MAX_DISTANCE);
 NewPing sonarLeft(trigPinLeft, echoPinLeft, MAX_DISTANCE);

@@ -17,9 +17,9 @@ Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS3472
 
 //-------------------------Delcaracion de variables--------------------------------
 //------------------RGB
-int Rojillo = 52;       //van a cambiar porque no son PWM
-int Verdesillo = 50;
-int Azulillo = 53;
+int Rojillo = 5;       //van a cambiar porque no son PWM
+int Verdesillo = 3;
+int Azulillo = 6;
 
 //====Puentes H
 const int ADELANTE_1 = 4; // LLANTA 1: (ADELANTE) 
@@ -128,7 +128,7 @@ void vuelta_Izquierda() { //-------------------ya esta
   digitalWrite(ADELANTE_1, LOW);
   digitalWrite(ATRAS_2, LOW); 
   digitalWrite(ATRAS_1, HIGH);
-  analogWrite(PWM1, 120);
+  analogWrite(PWM1, 130);
   analogWrite(PWM2, 90);
 }
 
@@ -215,18 +215,18 @@ String Lcolor(){
     color = "RED";
   }
 
-  if ((G - B > 10) & (G - R > 30)) {
+  if ((G - B > 10) & (G - R > 20)) {
     color = "GREEN";
   }
 
-  if ((B - G > 20) & (B - R > 40)) {
+  if ((G - B > 2) & (B - R > 20)) {
     color = "BLUE";
   }
 
   if ((R - B > 10) & (G - B > 20)) {
     color = "YELLOW";
   }
-  if ((R > 200) & (B > 150) & (G < 120)) {
+  else if ((R - B > 9) && (R - G > 9)) {
     color = "PINK";
   }
 
@@ -266,7 +266,7 @@ String Lcolor(){
   Serial.print("  B: "); Serial.print(B);
   Serial.print("  Color: "); Serial.println(color);
 
-  delay(300);
+  delay(50);
 
 
   return color;
@@ -307,6 +307,8 @@ void recorrido(String color, float dFront,float dLeft,float dRight, float dBack)
 
   case INICIO:
       if (color == "GREEN"){
+        DELANTERAS_adelante(vBase);
+        delay(300);
         EActual = RECORRIDO; 
       } break;
 
@@ -319,7 +321,6 @@ void recorrido(String color, float dFront,float dLeft,float dRight, float dBack)
     //ARRAY infrarrojos
     leerINFRAS();
     bool negro = todosNEGROS();
-
 
     if (!negro){
       giro(dFront, dLeft, dRight, dBack);//Incluye: derecha, izquierda,atras, else adelante
@@ -387,7 +388,7 @@ void setup() {
 //Sensor de color
   if(tcs.begin()){
     Serial.println("INICIALIZADO: Sensor de color TCS34725");
-    delay(2000);
+    delay(200);
   }
   else{
     Serial.println("Error");

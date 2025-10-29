@@ -11,9 +11,9 @@ Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS3472
 
 //-------------------------Delcaracion de variables--------------------------------
 //------------------RGB
-int Rojillo = 52;       //van a cambiar porque no son PWM
-int Verdesillo = 50;
-int Azulillo = 53;
+int Rojillo = 5;       //van a cambiar porque no son PWM
+int Verdesillo = 6;
+int Azulillo = 3;
 
 
 //====Puentes H
@@ -73,7 +73,14 @@ bool kicking = false;
 #define S1 45
 #define S2 44
 #define S3 46
-#define OUT 42
+#define sensorOut 42
+
+// Variables para el sensor de color NARANJA
+int redPW = 0;
+int greenPW = 0;
+int bluePW = 0;
+
+
 
 
 //-------------------------Funiones Puentes H---------------------------------------------------------
@@ -164,21 +171,23 @@ String Lcolor(){
 
   String color = "";
 
-  if ((R - G > 50) & (R - B > 50)) {
+  if ((R - G > 50) && (R - B > 50)) {
     color = "RED";
   }
 
-  if ((G - B > 10) & (G - R > 30)) {
+  if ((G - B > 10) && (G - R > 30)) {
     color = "GREEN";
   }
 
-  if ((B - G > 20) & (B - R > 40)) {
+  if ((B - G > 20) && (B - R > 40)) {
     color = "BLUE";
   }
 
-  if ((R - B > 10) & (G - B > 20)) {
+  if ((R - B > 10) && (G - B > 20)) {
     color = "YELLOW";
-  }
+    
+}
+
 
 
 
@@ -198,41 +207,108 @@ String Lcolor(){
 }
 
 
-//===================================Funciones "Naranja"
-unsigned long leerCanal(bool s2, bool s3) {
-  digitalWrite(S2, s2 ? HIGH : LOW);
-  digitalWrite(S3, s3 ? HIGH : LOW);
-  unsigned long t = pulseIn(OUT, LOW, 50000UL);
-  if (t == 0) t = 50000UL;
-  return t;
-}
-//funcion principal
+
+//-----------------------------------------------------NARANJA - TCS230
 String Naranja(){
-  digitalWrite(S0, HIGH);
-  digitalWrite(S1, LOW);
-  unsigned long pR = leerCanal(false, false);
-  unsigned long pG = leerCanal(true,  true);
-  unsigned long pB = leerCanal(false, true);
-  bool rojoFuerte = (pR < 1800);
-  bool verdeMedio = (pG > 1500 && pG < 3500);
-  bool azulDebil  = (pB > 3000);
-  if (rojoFuerte && verdeMedio && azulDebil) return "NARANJA";
-  else return "NONE";
+
+//Sensor de color
+	redPW = getRedPW();
+	// Delay to stabilize sensor
+	delay(50);
+
+	// Read Green Pulse Width
+	greenPW = getGreenPW();
+	// Delay to stabilize sensor
+	delay(50);
+
+	// Read Blue Pulse Width
+	bluePW = getBluePW();
+	// Delay estabilizante sensor
+	delay(50);
+
+	// Print  Serial Monitor
+	Serial.print("Red PW = ");
+	Serial.print(redPW);
+	Serial.print(" - Green PW = ");
+	Serial.print(greenPW);
+	Serial.print(" - Blue PW = ");
+	Serial.println(bluePW);
+
+  String naranja = "";
+
+  if ((redPW >= 123 && redPW <= 165) && 
+    (greenPW >= 180 && greenPW <= 220) && 
+    (bluePW >= 100 && bluePW <= 280)) {
+  
+    naranja = "NARANJA"; //variable "NARANJA"
+  }
 }
+
+//------------------------------FUNCIONES PARA OBTENER LOS RAWS
+
+int getRedPW() {
+	// Set sensor to read Red only
+	digitalWrite(S2,LOW);
+	digitalWrite(S3,LOW);
+	// Define integer to represent Pulse Width
+	int PW;
+	// Read the output Pulse Width
+	PW = pulseIn(sensorOut, LOW);
+	// Return the value
+	return PW;
+}
+
+// Function to read Green Pulse Widths
+int getGreenPW() {
+	// Set sensor to read Green only
+	digitalWrite(S2,HIGH);
+	digitalWrite(S3,HIGH);
+	// Define integer to represent Pulse Width
+	int PW;
+	// Read the output Pulse Width
+	PW = pulseIn(sensorOut, LOW);
+	// Return the value
+	return PW;
+}
+
+// Function to read Blue Pulse Widths
+int getBluePW() {
+	// Set sensor to read Blue only
+	digitalWrite(S2,LOW);
+	digitalWrite(S3,HIGH);
+	// Define integer to represent Pulse Width
+	int PW;
+	// Read the output Pulse Width
+	PW = pulseIn(sensorOut, LOW);
+	// Return the value
+	return PW;
+}
+
+//-----------------------------------------------------------------NARANJA
+
+
 
 //================================Funcion para leer ultrasonicos
 void leerUltrasonicos(float &dFront, float &dLeft, float &dRight, float &dBack) {
   
   dFront = sonarFront.ping_cm(); 
-        if (dFront == 0) dFront = 999; //se evitan lecturas en falso
+        if (dFront == 0) dFront = 100; //se evitan lecturas en falso
   dLeft  = sonarLeft.ping_cm();  
-        if (dLeft  == 0) dLeft  = 999;
+        if (dLeft  == 0) dLeft  = 100;
   dRight = sonarRight.ping_cm(); 
-        if (dRight == 0) dRight = 999;
+        if (dRight == 0) dRight = 100;
   dBack = sonarBack.ping_cm(); 
-        if (dBack == 0) dBack = 999;
+        if (dBack == 0) dBack = 100;
+
+  //          Imprimir las lecturas
+  Serial.print("Front: "); Serial.print(dFront); Serial.print(" cm | ");
+  Serial.print("Left: "); Serial.print(dLeft); Serial.print(" cm | ");
+  Serial.print("Right: "); Serial.print(dRight); Serial.print(" cm | ");
+  Serial.print("Back: "); Serial.print(dBack); Serial.println(" cm");
     
-    }
+  }
+
+
 
 
 
@@ -322,7 +398,7 @@ void recorrido(String color, String naranja, float dFront,float dLeft,float dRig
       //primer if: vuelta a la derecha
       if (dFront < 5 && dRight > 5){ //asi entonces aunque vatya recorriendo solo tomara la salida en que ladintacnia sea mas larga para dar vuelta
         vuelta_Derecha();
-        delay(500); //ver si es suficiente delay para dar la vuelta
+        delay(1000); //ver si es suficiente delay para dar la vuelta
       } else{
         DELANTERAS_adelante(vBase);
       }
@@ -330,8 +406,9 @@ void recorrido(String color, String naranja, float dFront,float dLeft,float dRig
       //segundo if vuelta a la IZQUIERDA
       if (dFront < 5 && dLeft > 5){ 
         vuelta_Izquierda();
-        delay(500); //ver si es suficiente delay para dar la vuelta
+        delay(1000); //ver si es suficiente delay para dar la vuelta
       } else{
+
         DELANTERAS_adelante(vBase);
       }
     } else if(color == "BLUE" || color == "YELLOW"){
@@ -360,19 +437,37 @@ void setup() {
   pinMode(PWM2, OUTPUT);
   //-----------------------------------------------------------puentes H
 
+//-------------------------------------Sensor NARANJA
+  pinMode(S0, OUTPUT);
+	pinMode(S1, OUTPUT);
+	pinMode(S2, OUTPUT);
+	pinMode(S3, OUTPUT);
+
+// Set Pulse Width scaling to 20%
+	digitalWrite(S0,HIGH);
+	digitalWrite(S1,LOW);
+
+// Set Sensor output as input
+	pinMode(sensorOut, INPUT);
+
+
 //servo
-  Serial.begin(115200);
+
   garra.attach(servo_pin); //servo >>> garra // es el pin 10
+
 
 //Sensor de Color
   if(tcs.begin()){
     Serial.println("INICIALIZADO: Sensor de color TCS34725");
-    delay(2000);
+    delay(500);   //tiempo de inicializacion
   }
   else{
     Serial.println("Error");
   }
 //-------------------------------------------------------Sensor de Color
+
+
+  Serial.begin(115200);
 }
 
 

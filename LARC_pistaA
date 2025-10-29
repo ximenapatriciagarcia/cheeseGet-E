@@ -12,13 +12,13 @@ Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS3472
 //-------------------------Delcaracion de variables--------------------------------
 //------------------RGB
 int Rojillo = 5;       //van a cambiar porque no son PWM
-int Verdesillo = 6;
-int Azulillo = 3;
+int Verdesillo = 3;
+int Azulillo = 6;
 
 
 //====Puentes H
-const int ADELANTE_1 = 4; // LLANTA 1: (ADELANTE) 
-const int ATRAS_1 = 11;    // LLANTA 1: (ATRAS)    
+const int ADELANTE_1 = 11; // LLANTA 1: (ADELANTE) 
+const int ATRAS_1 = 4;    // LLANTA 1: (ATRAS)    
 const int ATRAS_2 = 7;    // LLANTA 2: (ADELANTE)
 const int ADELANTE_2 = 8;
 
@@ -37,7 +37,7 @@ Servo garra; //creo el objeto para servo
 const int servo_pin = 10;
 
 //================Variables=========================Ultrasonicos
-#define MAX_DISTANCE 200 //si hay algo mas lejos que esta distancia el sensorlo ignora
+#define MAX_DISTANCE 90 //si hay algo mas lejos que esta distancia el sensorlo ignora
 
 //De izquierda a derecha >>> GARRA AL FRENTE
 
@@ -159,7 +159,7 @@ void stop() {
 //==========================Funcion de color - TCS34725
 //falta que regrese "GREEN", "BLUE", "YELLOW", "RED"
 String Lcolor(){
-   float red,green,blue;
+  float red,green,blue;
   tcs.getRGB(&red,&green,&blue);
   int R = int(red);
   int G = int(green);
@@ -171,36 +171,62 @@ String Lcolor(){
 
   String color = "";
 
-  if ((R - G > 50) && (R - B > 50)) {
+  if ((R - G > 50) & (R - B > 50)) {
     color = "RED";
   }
 
-  if ((G - B > 10) && (G - R > 30)) {
+  if ((G - B > 10) && (G - R > 20)) {
     color = "GREEN";
   }
 
-  if ((B - G > 20) && (B - R > 40)) {
+  if ((G - B > 5) && (B - R > 20)) {
     color = "BLUE";
   }
 
-  if ((R - B > 10) && (G - B > 20)) {
+  if ((R - B > 10) & (G - B > 20)) {
     color = "YELLOW";
-    
-}
+  }
+  else if ((R - B > 9) && (R - G > 9)) {
+    color = "PINK";
+  }
 
-
-
-
-  analogWrite(Rojillo, R);
-  analogWrite(Verdesillo, G);
-  analogWrite(Azulillo, B);
+  if (color == "RED") {
+    analogWrite(Rojillo, 255);
+    analogWrite(Verdesillo, 0);
+    analogWrite(Azulillo, 0);
+  }
+  else if (color == "GREEN") {
+    analogWrite(Rojillo, 0);
+    analogWrite(Verdesillo, 255);
+    analogWrite(Azulillo, 0);
+  }
+  else if (color == "BLUE") {
+    analogWrite(Rojillo, 0);
+    analogWrite(Verdesillo, 0);
+    analogWrite(Azulillo, 255);
+  }
+  else if (color == "YELLOW") {
+    analogWrite(Rojillo, 255);
+    analogWrite(Verdesillo, 215);
+    analogWrite(Azulillo, 0);
+  }
+  else if (color == "PINK") {
+    analogWrite(Rojillo, 255);
+    analogWrite(Verdesillo, 0);
+    analogWrite(Azulillo, 128);
+  }
+  else {
+  analogWrite(Rojillo, 100);
+  analogWrite(Verdesillo, 100);
+  analogWrite(Azulillo, 100);
+  }
 
   Serial.print("R: "); Serial.print(R);
   Serial.print("  G: "); Serial.print(G);
   Serial.print("  B: "); Serial.print(B);
   Serial.print("  Color: "); Serial.println(color);
 
-  delay(300);
+  delay(50);
 
 
   return color;
@@ -315,7 +341,7 @@ void leerUltrasonicos(float &dFront, float &dLeft, float &dRight, float &dBack) 
 //-------------------------------------------FUNCIONES DE LOGICA-------------------
 enum Estado {
   INICIO,
-  BUSQUEDA, //solamente avanzarhasta tener la pelota y cerrar garra
+  BUSQUEDA, //solamente avanzar hasta tener la pelota y cerrar garra
   FLAG,
   KICK,
   DROP,
@@ -330,20 +356,24 @@ void recorrido(String color, String naranja, float dFront,float dLeft,float dRig
 
     case INICIO:
       if (color == "GREEN"){
+        garra.write(100);
         EActual = BUSQUEDA; 
-      } break;
+      } 
+      break;
   
     case BUSQUEDA:
       naranja = Naranja(); //refrescamos lectura del naranja
 
-      if(naranja =="NARANJA"){
-        stop();
-        delay(200); //delay de 200 para que tome la pelota
-        garra.write(70); //momentaneamente
-        EActual = FLAG;
-      } else {
+      if(naranja != "NARANJA"){
+        garra.write(100); //abrimos garra
         DELANTERAS_adelante(vBase);
         delay(500); //tal vez pueden avanzar hasta encontrarlo? sin necesidad del delay
+      } else {
+
+        stop();
+        delay(200); //delay de 200 para que tome la pelota
+        garra.write(65); //momentaneamente garra en 0 es cerr
+        EActual = FLAG;
       } 
       break;
   
@@ -358,14 +388,14 @@ void recorrido(String color, String naranja, float dFront,float dLeft,float dRig
         break;
 
   case KICK:
-    garra.write(100);  //se abre la garra
+    garra.write(100);  //se abre la garra la garra se abre en 180 completamente
     DELANTERAS_atras(80);  //retrocede con velocidad de 80
-    delay(500);
+    delay(650); 
 
     DELANTERAS_adelante(120); //avanza con velocidad de 120
     //delay(500); //El delay lo quiro por el momento por que se supone debe de parar al detectar la pared
                   //y si dejo el delay se va a detener la lectura de los ultrasonicos
-    if (dFront < 5){ //5 cm
+    if (dFront < 7){ //5 cm
       stop();
       delay(500);  //este delay es en lo que quitan la pared, no se necesita lectura Ultrasonica
       EActual = BUSQUEDA;
@@ -374,10 +404,10 @@ void recorrido(String color, String naranja, float dFront,float dLeft,float dRig
   case DROP:
     leerUltrasonicos(dFront, dLeft, dRight,dBack); //refrescamos la lectra de los U
 
-    if (dFront >= 4){ //ver si es suficiente para que la garra este del otro lado
+    if (dFront >= 7){ //ver si es suficiente para que la garra este del otro lado
                     //esto mietras la garra esta cerrada con la pelota
       DELANTERAS_adelante(vBase);
-    } else if (dFront <= 3){
+    } else if (dFront <= 7){
       stop();
       delay(500);
       garra.write(100); //se abre la garra
@@ -389,7 +419,7 @@ void recorrido(String color, String naranja, float dFront,float dLeft,float dRig
     }
     break;
 
-  case RECORRIDO: 
+  case RECORRIDO: //recorrido mientras no encontramos FLAG
     leerUltrasonicos(dFront, dLeft, dRight,dBack); //refrescamos la lectra de los U
     color = Lcolor(); //se tiene que actualizar la lectura dentro del case
 

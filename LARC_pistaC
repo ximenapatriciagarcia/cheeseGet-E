@@ -32,9 +32,8 @@ const int PWM2 = 9;
 
 //=================================================Variables de velocidad ESTANDAR
 int vBase = 60; //le bajede 85 a 60, para que sea un recorrido suave
-
-int vGiro = 85; //estandar para giros
-int vSoft = 70; //
+int vGiro = 85;    //estandar para giros
+int vSoft = 70;   //
 
 
 /*     EN ESTA PISTA NO SE NECESITA EL SERVO
@@ -46,7 +45,7 @@ const int servo_pin = 10;
 
 
 //================Variables=========================Ultrasonicos
-#define MAX_DISTANCE 200 //si hay algo mas lejos que esta distancia el sensorlo ignora
+#define MAX_DISTANCE 60 //Se usan los 60 cm , si hay algo mas lejos que esta distancia el sensorlo ignora
 const int trigPinFront = 35;
 const int echoPinFront = 34;
 
@@ -85,7 +84,7 @@ int lecturas[numInfra];
 //-----------------------------
   void leerINFRAS() {
     for (int i = 0; i < numInfra; i++) {
-      lecturas[i] = digitalRead(pinesIR[i]); // guarda 0 o 1
+      lecturas[i] = !digitalRead(pinesIR[i]); // guarda 0 o 1
     }
   }
 //--------------Funcion infrarrojos "TODOS NEGRO"
@@ -219,7 +218,7 @@ String Lcolor(){
     color = "GREEN";
   }
 
-  if ((G - B > 2) & (B - R > 20)) {
+  if ((B - G <= 70) && (B - R > 60)) {
     color = "BLUE";
   }
 
@@ -274,16 +273,18 @@ String Lcolor(){
 
 
 //==================================================Funcion para leer ultrasonicos
+
+
 void leerUltrasonicos(float &dFront, float &dLeft, float &dRight, float &dBack) {
   
   dFront = sonarFront.ping_cm(); 
-        if (dFront == 0) dFront = 999; //se supone es la distancia maxima
+        if (dFront == 0) dFront = 100; //se supone es la distancia maxima
   dLeft  = sonarLeft.ping_cm();  
-        if (dLeft  == 0) dLeft  = 999;
+        if (dLeft  == 0) dLeft  = 100;
   dRight = sonarRight.ping_cm(); 
-        if (dRight == 0) dRight = 999;
+        if (dRight == 0) dRight = 100;
   dBack = sonarBack.ping_cm(); 
-        if (dBack == 0) dBack = 999;
+        if (dBack == 0) dBack = 100;
 
 
   //          Imprimir las lecturas
@@ -308,7 +309,7 @@ void recorrido(String color, float dFront,float dLeft,float dRight, float dBack)
   case INICIO:
       if (color == "GREEN"){
         DELANTERAS_adelante(vBase);
-        delay(300);
+        delay(1600);
         EActual = RECORRIDO; 
       } break;
 
@@ -327,8 +328,10 @@ void recorrido(String color, float dFront,float dLeft,float dRight, float dBack)
     } 
     else {
         DELANTERAS_atras(70);
-        delay(300); //suficiente para que salga
-
+        delay(1600); //suficiente para que salga
+        vuelta_Izquierda();
+        delay(1350);
+        
         giro(dFront, dLeft, dRight, dBack); 
     }
   break;
@@ -344,20 +347,20 @@ void recorrido(String color, float dFront,float dLeft,float dRight, float dBack)
 void giro(float dFront, float dLeft, float dRight, float dBack){
 //funcion para dar giros
   //primer if: vuelta a la DERECHA
-  if (dFront < 5 && dRight > 5){ //asi entonces aunque vatya recorriendo solo tomara la salida en que ladintacnia sea mas larga para dar vuelta
+  if (dFront < 6 && dRight > 6){ //asi entonces aunque vatya recorriendo solo tomara la salida en que ladintacnia sea mas larga para dar vuelta
     vuelta_Derecha();
-    delay(500); //ver si es suficiente delay para dar la vuelta
+    delay(1300); //ver si es suficiente delay para dar la vuelta
   }
 
   //segundo if vuelta a la IZQUIERDA
-  else if (dFront < 5 && dLeft > 5){ //tal vez se deba de subir a 7 dependiendo del Robot
+  else if (dFront < 6 && dLeft > 6){ //tal vez se deba de subir a 7 dependiendo del Robot
     vuelta_Izquierda();
-    delay(500); //ver si es suficiente delay para dar la vuelta
+    delay(1300); //ver si es suficiente delay para dar la vuelta
   } 
 
-  else if (dFront < 5 && dLeft < 5 && dRight < 5){
+  else if (dFront < 6 && dLeft < 6 && dRight < 6){
     DELANTERAS_atras(70);
-    delay(300); //suficiente para que salga
+    delay(1600); //suficiente para que salga
 
   } else{ //Else avanza adelante
       DELANTERAS_adelante(vBase); // velocidad Base

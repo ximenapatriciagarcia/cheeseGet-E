@@ -197,6 +197,7 @@ String Lcolor(){
 }
 */
 
+
 String Lcolor(){
   float red,green,blue;
   tcs.getRGB(&red,&green,&blue);
@@ -229,10 +230,36 @@ String Lcolor(){
     color = "PINK";
   }
 
-
-  analogWrite(Rojillo, R);
-  analogWrite(Verdesillo, G);
-  analogWrite(Azulillo, B);
+  if (color == "RED") {
+    analogWrite(Rojillo, 255);
+    analogWrite(Verdesillo, 0);
+    analogWrite(Azulillo, 0);
+  }
+  else if (color == "GREEN") {
+    analogWrite(Rojillo, 0);
+    analogWrite(Verdesillo, 255);
+    analogWrite(Azulillo, 0);
+  }
+  else if (color == "BLUE") {
+    analogWrite(Rojillo, 0);
+    analogWrite(Verdesillo, 0);
+    analogWrite(Azulillo, 255);
+  }
+  else if (color == "YELLOW") {
+    analogWrite(Rojillo, 255);
+    analogWrite(Verdesillo, 215);
+    analogWrite(Azulillo, 0);
+  }
+  else if (color == "PINK") {
+    analogWrite(Rojillo, 255);
+    analogWrite(Verdesillo, 0);
+    analogWrite(Azulillo, 128);
+  }
+  else {
+  analogWrite(Rojillo, 100);
+  analogWrite(Verdesillo, 100);
+  analogWrite(Azulillo, 100);
+  }
 
   Serial.print("R: "); Serial.print(R);
   Serial.print("  G: "); Serial.print(G);
@@ -369,7 +396,7 @@ void setup() {
   }
 
   Serial.println("Lectura de INFRARROJOS lista");
-  }
+}
 
 
 

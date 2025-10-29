@@ -24,8 +24,8 @@ int Azulillo = 53;
 //====Puentes H
 const int ADELANTE_1 = 4; // LLANTA 1: (ADELANTE) 
 const int ATRAS_1 = 11;    // LLANTA 1: (ATRAS)    
-const int ATRAS_2 = 7;    // LLANTA 2: (ADELANTE)
-const int ADELANTE_2 = 8;
+const int ATRAS_2 = 8;    // LLANTA 2: (ADELANTE)
+const int ADELANTE_2 = 7;
 
 const int PWM1 = 2;   
 const int PWM2 = 9;
@@ -284,6 +284,13 @@ void leerUltrasonicos(float &dFront, float &dLeft, float &dRight, float &dBack) 
         if (dRight == 0) dRight = 999;
   dBack = sonarBack.ping_cm(); 
         if (dBack == 0) dBack = 999;
+
+
+  //          Imprimir las lecturas
+  Serial.print("Front: "); Serial.print(dFront); Serial.print(" cm | ");
+  Serial.print("Left: "); Serial.print(dLeft); Serial.print(" cm | ");
+  Serial.print("Right: "); Serial.print(dRight); Serial.print(" cm | ");
+  Serial.print("Back: "); Serial.print(dBack); Serial.println(" cm");
     
 }
 

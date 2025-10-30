@@ -13,8 +13,8 @@ const int intervalo = 100;
 //Puente H >>> pines ya quedaron cambiados 09/10/2025
 const int ADELANTE_1 = 4; // LLANTA 1: (ADELANTE) 
 const int ATRAS_1 = 11;    // LLANTA 1: (ATRAS)    
-const int ATRAS_2 = 7;    // LLANTA 2: (ADELANTE)
-const int ADELANTE_2 = 8;
+const int ATRAS_2 = 8;    // LLANTA 2: (ADELANTE)
+const int ADELANTE_2 = 7;
 
 const int PWM1 = 2;   
 const int PWM2 = 9;
@@ -67,7 +67,7 @@ void vuelta_Izquierda() { //-------------------ya esta
   digitalWrite(ADELANTE_1, LOW);
   digitalWrite(ATRAS_2, LOW); 
   digitalWrite(ATRAS_1, HIGH);
-  analogWrite(PWM1, 120);
+  analogWrite(PWM1, 130);
   analogWrite(PWM2, 90);
 }
 
@@ -112,27 +112,25 @@ void stop() {
   analogWrite(PWM2, 0);
 }
 
-
+//-----------------------------------------------------------------------------------------------------------AJUSTES (lado a lado)
 void LADOLADO(){
   //Funcion que en caso de no encontrar la linea la busca
   //Usa los giros "FUERTES"
   vuelta_Derecha();
-  delay(200);
+  delay(900);
   vuelta_Izquierda();
-  delay(200);
+  delay(900);
 }
 
 void ladolado(){
   //Funcion que en caso de no encontrar la linea la busca
   //Usa los giros "SUAVES"
   ligero_DE();
-  delay(200);
+  delay(900);
   ligero_IZ();
-  delay(200);
+  delay(900);
 }
-
-
-
+//-----------------------------------------------------------------------------------------------------------AJUSTES  (lado a lado)
 
 //==========MAQUINA DE ESTADOS===================
 enum Estado {
@@ -160,14 +158,14 @@ void newEstado() {
 
   //10000
   //caso de giro suave Izquierda
-  if (F1E == HIGH || C1E == HIGH && F2E == LOW && C2E ==LOW && F3E ==LOW) { //cambie el && por ||
+  if (F1E == HIGH && C1E == HIGH && F2E == LOW && C2E ==LOW && F3E ==LOW) { //cambie el && por ||
 
     EActual = SUAVE_IZ;        
     return;
   }                              
 
   //Caso de giro suave Derecha
-  if (F1E == LOW && C1E == LOW && F2E == LOW && C2E == HIGH || F3E == HIGH ) { //cambie el && por ||
+  if (F1E == LOW && C1E == LOW && F2E == LOW && C2E == HIGH && F3E == HIGH ) { //cambie el && por ||
 
 
     EActual = SUAVE_DE;
@@ -175,25 +173,19 @@ void newEstado() {
   }
 
   //Caso en el que se tiene que dar VUELTA  IZQUIERDA
-  if (F1E == LOW && C1E == LOW && F2E == LOW && C2E ==LOW && F3E ==HIGH) {
+  if (F1E == LOW && C1E == LOW && F2E == LOW && C2E ==LOW && F3E ==HIGH) {       //   VUELTA
 
-    EActual = IZQUIERDA;
+    EActual = DERECHA;
     return;
   }
   
   //Caso en el que se tiene que dar vuelta   DERECHA
   if (F1E == HIGH && C1E == LOW && F2E == LOW && C2E ==LOW && F3E == LOW){
 
-    EActual = DERECHA;
+    EActual = IZQUIERDA;
     return;
   }
 
-  // "Variante Nada" -> mini bonus (4,D) >> cambio de patron
-  if (F1E == LOW && F2E == LOW && F3E == LOW && C1E == LOW && C2E == LOW) {
-
-    EActual = VARIANTE_NADA;
-    return;
-  } 
 
   // "BONUS_invertido" >> central leera blanco (LOW)
   if (F2E == LOW && F1E == HIGH && F3E == HIGH && C1E == HIGH && C2E == HIGH){
@@ -233,14 +225,16 @@ void ACCION() {
     
     case IZQUIERDA:
       vuelta_Izquierda();
+
       break;
     
     case DERECHA:
       vuelta_Derecha();
+      delay(500);
       break;
     
     case AJUSTAR:
-      ladolado();
+      ladolado(); //con los suaves
       break;
 
     case VARIANTE_NADA:

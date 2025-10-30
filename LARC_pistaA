@@ -27,17 +27,17 @@ const int PWM2 = 9;
 
 
 //=================================================Variables de velocidad ESTANDAR
-int vBase = 60; //le bajede 85 a 60, para que sea un recorrido suave
+int vBase = 85; //le bajede 85 a 60, para que sea un recorrido suave
 
 int vGiro = 85; //estandar para giros
-int vSoft = 70; //
+int vSoft = 65; //
 
 //================Variables=========================Servo
 Servo garra; //creo el objeto para servo
 const int servo_pin = 10;
 
 //================Variables=========================Ultrasonicos
-#define MAX_DISTANCE 90 //si hay algo mas lejos que esta distancia el sensorlo ignora
+#define MAX_DISTANCE 60 //si hay algo mas lejos que esta distancia el sensorlo ignora
 
 //De izquierda a derecha >>> GARRA AL FRENTE
 
@@ -63,10 +63,6 @@ NewPing sonarLeft(trigPinLeft, echoPinLeft, MAX_DISTANCE);
 NewPing sonarRight(trigPinRight, echoPinRight, MAX_DISTANCE);
 NewPing sonarBack(trigPinBack, echoPinBack, MAX_DISTANCE);
 
-/*
-unsigned long kickStart = 0;
-bool kicking = false;
-*/
 
 //============Variables====================Sensor de Color "naranja"
 #define S0 43
@@ -171,24 +167,24 @@ String Lcolor(){
 
   String color = "";
 
-  if ((R - G > 50) & (R - B > 50)) {
-    color = "RED";
-  }
+    if ((R - G > 50) && (R - B > 50)) {
+      color = "RED";
+    }
+    else if ((G - B > 30) && (B - R > 5)) {
+      color = "BLUE";
+    }
+    else if ((R - B > 10) && (G - B > 20)) {
+      color = "YELLOW";
+    }
+    else if ((R - B > 9) && (R - G > 9)) {
+      color = "PINK";
 
-  if ((G - B > 10) && (G - R > 20)) {
-    color = "GREEN";
-  }
-
-  if ((G - B > 5) && (B - R > 20)) {
-    color = "BLUE";
-  }
-
-  if ((R - B > 10) & (G - B > 20)) {
-    color = "YELLOW";
-  }
-  else if ((R - B > 9) && (R - G > 9)) {
-    color = "PINK";
-  }
+    } 
+    else if ((G - B > 10) && (G - R > 20)) {
+      color = "GREEN";
+    } else{
+      color  = "NADA";
+    }
 
   if (color == "RED") {
     analogWrite(Rojillo, 255);
@@ -226,7 +222,7 @@ String Lcolor(){
   Serial.print("  B: "); Serial.print(B);
   Serial.print("  Color: "); Serial.println(color);
 
-  delay(50);
+  delay(10);
 
 
   return color;
@@ -240,17 +236,17 @@ String Naranja(){
 //Sensor de color
 	redPW = getRedPW();
 	// Delay to stabilize sensor
-	delay(50);
+	delay(10);
 
 	// Read Green Pulse Width
 	greenPW = getGreenPW();
 	// Delay to stabilize sensor
-	delay(50);
+	delay(10);
 
 	// Read Blue Pulse Width
 	bluePW = getBluePW();
 	// Delay estabilizante sensor
-	delay(50);
+	delay(10);
 
 	// Print  Serial Monitor
 	Serial.print("Red PW = ");
@@ -261,13 +257,14 @@ String Naranja(){
 	Serial.println(bluePW);
 
   String naranja = "";
-
-  if ((redPW >= 123 && redPW <= 165) && 
-    (greenPW >= 180 && greenPW <= 220) && 
-    (bluePW >= 100 && bluePW <= 280)) {
+//esta calibracion es para ROSA, si funciona o hago correciones en codigo, cambiar solo esta parte
+  if ((redPW >= 80 && redPW <= 100) && 
+    (greenPW >= 140 && greenPW <= 170) && 
+    (bluePW >= 110 && bluePW <= 160)) {
   
-    naranja = "NARANJA"; //variable "NARANJA"
+    naranja = "NARANJA"; //variable "NARANJA"  en la prueba es para el color ROSA
   }
+  return naranja;
 }
 
 //------------------------------FUNCIONES PARA OBTENER LOS RAWS
@@ -315,10 +312,11 @@ int getBluePW() {
 
 
 //================================Funcion para leer ultrasonicos
+
 void leerUltrasonicos(float &dFront, float &dLeft, float &dRight, float &dBack) {
   
   dFront = sonarFront.ping_cm(); 
-        if (dFront == 0) dFront = 100; //se evitan lecturas en falso
+        if (dFront == 0) dFront = 100; //se supone es la distancia maxima
   dLeft  = sonarLeft.ping_cm();  
         if (dLeft  == 0) dLeft  = 100;
   dRight = sonarRight.ping_cm(); 
@@ -326,14 +324,14 @@ void leerUltrasonicos(float &dFront, float &dLeft, float &dRight, float &dBack) 
   dBack = sonarBack.ping_cm(); 
         if (dBack == 0) dBack = 100;
 
+
   //          Imprimir las lecturas
   Serial.print("Front: "); Serial.print(dFront); Serial.print(" cm | ");
   Serial.print("Left: "); Serial.print(dLeft); Serial.print(" cm | ");
   Serial.print("Right: "); Serial.print(dRight); Serial.print(" cm | ");
   Serial.print("Back: "); Serial.print(dBack); Serial.println(" cm");
     
-  }
-
+}
 
 
 
@@ -350,13 +348,13 @@ enum Estado {
 };
 Estado EActual = INICIO;
 
-void recorrido(String color, String naranja, float dFront,float dLeft,float dRight, float dBack){
+void recorrido(String color, String naranja,float dFront, float dLeft,float dRight, float dBack){
 
   switch(EActual){
 
     case INICIO:
       if (color == "GREEN"){
-        garra.write(100);
+        garra.write(125);
         EActual = BUSQUEDA; 
       } 
       break;
@@ -366,12 +364,14 @@ void recorrido(String color, String naranja, float dFront,float dLeft,float dRig
 
       if(naranja != "NARANJA"){
         garra.write(100); //abrimos garra
-        DELANTERAS_adelante(vBase);
+        DELANTERAS_adelante(vBase); //cero temporal poner el vBase
         delay(500); //tal vez pueden avanzar hasta encontrarlo? sin necesidad del delay
+        naranja = Naranja(); //refrescamos lectura del naranja
+        EActual = FLAG;
       } else {
 
         stop();
-        delay(200); //delay de 200 para que tome la pelota
+        delay(800); //delay de 200 para que tome la pelota
         garra.write(65); //momentaneamente garra en 0 es cerr
         EActual = FLAG;
       } 
@@ -388,31 +388,38 @@ void recorrido(String color, String naranja, float dFront,float dLeft,float dRig
         break;
 
   case KICK:
-    garra.write(100);  //se abre la garra la garra se abre en 180 completamente
-    DELANTERAS_atras(80);  //retrocede con velocidad de 80
-    delay(650); 
 
-    DELANTERAS_adelante(120); //avanza con velocidad de 120
-    //delay(500); //El delay lo quiro por el momento por que se supone debe de parar al detectar la pared
-                  //y si dejo el delay se va a detener la lectura de los ultrasonicos
-    if (dFront < 7){ //5 cm
-      stop();
-      delay(500);  //este delay es en lo que quitan la pared, no se necesita lectura Ultrasonica
-      EActual = BUSQUEDA;
+    garra.write(125);  //se abre la garra la garra se abre en 180 completamente
+    DELANTERAS_atras(120);  //retrocede con velocidad de 80
+    delay(200);
+    DELANTERAS_adelante(150); //avanza con velocidad de 120
+    delay(250);
+    stop();
+    delay(100);
+    leerUltrasonicos(dFront, dLeft, dRight, dBack); //refrescamos la lectra de los U
+    if (dFront < 6){ //5 cm
+      stop(); 
+      delay(800);  //este delay es en lo que quitan la pared, no se necesita lectura Ultrasonica
+      DELANTERAS_adelante(vBase);
+      delay(200);
+      EActual = RECORRIDO;
+
     } break;
   
   case DROP:
     leerUltrasonicos(dFront, dLeft, dRight,dBack); //refrescamos la lectra de los U
 
-    if (dFront >= 7){ //ver si es suficiente para que la garra este del otro lado
+    if (dFront > 10){ //ver si es suficiente para que la garra este del otro lado
                     //esto mietras la garra esta cerrada con la pelota
       DELANTERAS_adelante(vBase);
-    } else if (dFront <= 7){
+    } else if (dFront < 10){
       stop();
-      delay(500);
+      delay(700);
       garra.write(100); //se abre la garra
-      DELANTERAS_atras(vBase);
-      delay(500);
+      DELANTERAS_atras(vSoft);
+      delay(700);
+      stop();
+      delay(1000);
 
       EActual = RECORRIDO; //se cambia a recorrido para buscar las banderas o navegar entre el circuito
 
@@ -426,23 +433,21 @@ void recorrido(String color, String naranja, float dFront,float dLeft,float dRig
     if (color != "BLUE" && color != "YELLOW"){
 
       //primer if: vuelta a la derecha
-      if (dFront < 5 && dRight > 5){ //asi entonces aunque vatya recorriendo solo tomara la salida en que ladintacnia sea mas larga para dar vuelta
+      if (dFront < 9 && dRight > 12){ //asi entonces aunque vatya recorriendo solo tomara la salida en que ladintacnia sea mas larga para dar vuelta
         vuelta_Derecha();
-        delay(1000); //ver si es suficiente delay para dar la vuelta
+        delay(1350); //ver si es suficiente delay para dar la vuelta
       } else{
         DELANTERAS_adelante(vBase);
       }
 
       //segundo if vuelta a la IZQUIERDA
-      if (dFront < 5 && dLeft > 5){ 
+      if (dFront < 9 && dLeft > 12){ 
         vuelta_Izquierda();
-        delay(1000); //ver si es suficiente delay para dar la vuelta
+        delay(1350); //ver si es suficiente delay para dar la vuelta
       } else{
-
         DELANTERAS_adelante(vBase);
       }
-    } else if(color == "BLUE" || color == "YELLOW"){
-      Serial.println("Flag detectada, de RECORRIDO se pasa a EActual = FLAG");
+    } else{
       EActual = FLAG;
     }
   break;
@@ -503,9 +508,18 @@ void setup() {
 
 void loop() {
 
+//--------------------------------------------------------ULTRASONICOS
   //Variables Ultrasonicas y funcion
   float dFront,dLeft,dRight,dBack;
   leerUltrasonicos(dFront,dLeft,dRight,dBack);
+
+  Serial.print(F("Front: ")); if (dFront < 0) Serial.print(F("N/A")); else Serial.print(dFront);
+  Serial.print(F(" cm | Left: ")); if (dLeft < 0) Serial.print(F("N/A")); else Serial.print(dLeft);
+  Serial.print(F(" cm | Right: ")); if (dRight < 0) Serial.print(F("N/A")); else Serial.print(dRight);
+  Serial.print(F(" cm | Back: ")); if (dBack < 0) Serial.print(F("N/A")); else Serial.print(dBack);
+  Serial.println(F(" cm"));
+//--------------------------------------------------------ULTRASONICOS
+
 
   //variables para Maquina de Estados
   String TutiColor = Lcolor();

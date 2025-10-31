@@ -1,0 +1,628 @@
+#include <Wire.h>
+#include <Adafruit_TCS34725.h> //Sensor de color abajo I2C
+Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS34725_GAIN_1X);
+#include <NewPing.h>  //libreria para los ultrasonicos
+#include <Servo.h> //Libreria Servo
+
+
+//AUTHOR: Ximena Patricia Garcia Magdaleno
+//Pista A: banderas AMARILLA:  kick y CELESTE:drop
+//Sensores: Servo, Color frontal, Color abajo, cuatro ultrasonicos, Puentes H
+
+//-------------------------Delcaracion de variables--------------------------------
+//------------------RGB
+int Rojillo = 5;       //van a cambiar porque no son PWM
+int Verdesillo = 3;
+int Azulillo = 6;
+
+
+//====Puentes H
+const int ADELANTE_1 = 11; // LLANTA 1: (ADELANTE) 
+const int ATRAS_1 = 4;    // LLANTA 1: (ATRAS)    
+const int ATRAS_2 = 7;    // LLANTA 2: (ADELANTE)
+const int ADELANTE_2 = 8;
+
+const int PWM1 = 2;   
+const int PWM2 = 9;
+
+
+//=================================================Variables de velocidad ESTANDAR
+int vBase = 60; //le bajede 85 a 60, para que sea un recorrido suave
+
+int vGiro = 85; //estandar para giros
+int vSoft = 65; //
+
+//================Variables=========================Servo
+Servo garra; //creo el objeto para servo
+const int servo_pin = 10;
+
+//================Variables=========================Ultrasonicos
+#define MAX_DISTANCE 60 //si hay algo mas lejos que esta distancia el sensorlo ignora
+
+//De izquierda a derecha >>> GARRA AL FRENTE
+
+
+//Ultrasonico de FRONTAL
+const int trigPinFront = 39;
+const int echoPinFront = 38;
+
+//Ultrasonico de LEFT
+const int trigPinLeft  = 37;
+const int echoPinLeft  = 36;
+
+//Ultrasonico de RIGHT
+const int trigPinRight = 33;
+const int echoPinRight = 32;
+
+//Ultrasonico Back
+const int trigPinBack = 35;
+const int echoPinBack = 34;
+
+NewPing sonarFront(trigPinFront, echoPinFront, MAX_DISTANCE);
+NewPing sonarLeft(trigPinLeft, echoPinLeft, MAX_DISTANCE);
+NewPing sonarRight(trigPinRight, echoPinRight, MAX_DISTANCE);
+NewPing sonarBack(trigPinBack, echoPinBack, MAX_DISTANCE);
+
+
+//============Variables====================Sensor de Color "naranja"
+#define S0 43
+#define S1 45
+#define S2 44
+#define S3 46
+#define sensorOut 42
+
+// Variables para el sensor de color NARANJA
+int redPW = 0;
+int greenPW = 0;
+int bluePW = 0;
+
+
+
+
+//-------------------------Funiones Puentes H---------------------------------------------------------
+void DELANTERAS_adelante(int vB) {  // Se le da una variable de parametro en caso de modificarse en el codigo
+  digitalWrite(ADELANTE_2, HIGH);   
+  digitalWrite(ADELANTE_1, HIGH);
+  digitalWrite(ATRAS_2, LOW); 
+  digitalWrite(ATRAS_1, LOW);
+  analogWrite(PWM1, vB);
+  analogWrite(PWM2, vB);
+}
+
+void DELANTERAS_atras(int vB) {  // YA ESTA
+
+  digitalWrite(ADELANTE_2, LOW);   
+  digitalWrite(ADELANTE_1, LOW);
+  analogWrite(PWM1, vB);
+  analogWrite(PWM2, vB);
+  digitalWrite(ATRAS_2, HIGH); 
+  digitalWrite(ATRAS_1, HIGH);
+  
+}
+
+//-------funciones para giros--------
+void vuelta_Izquierda() { //-------------------ya esta
+  // Lado izquierdo atras, derecho adelante
+  digitalWrite(ADELANTE_2, HIGH);   
+  digitalWrite(ADELANTE_1, LOW);
+  digitalWrite(ATRAS_2, LOW); 
+  digitalWrite(ATRAS_1, HIGH);
+  analogWrite(PWM1, 120);
+  analogWrite(PWM2, 90);
+}
+
+void vuelta_Derecha() {  //---------------------ya esta
+  // Lado izquierdo adelante, derecho atras
+  digitalWrite(ADELANTE_2, LOW);   
+  digitalWrite(ADELANTE_1, HIGH);
+  digitalWrite(ATRAS_2, HIGH); 
+  digitalWrite(ATRAS_1, LOW);
+  analogWrite(PWM1, 90);
+  analogWrite(PWM2, 130);
+
+}
+
+//----giros--ligeros
+void ligero_IZ() {
+  digitalWrite(ADELANTE_2, HIGH);   
+  digitalWrite(ADELANTE_1, HIGH);
+  digitalWrite(ATRAS_2, LOW); 
+  digitalWrite(ATRAS_1, LOW);
+  analogWrite(PWM1, vSoft);
+  analogWrite(PWM2, vBase);
+}
+
+void ligero_DE() {
+  digitalWrite(ADELANTE_2, HIGH);   
+  digitalWrite(ADELANTE_1, HIGH);
+  digitalWrite(ATRAS_2, LOW); 
+  digitalWrite(ATRAS_1, LOW);
+  analogWrite(PWM1, vBase);
+  analogWrite(PWM2, vSoft);
+}
+
+
+//Stop
+void stop() {
+  digitalWrite(ADELANTE_2, LOW);   
+  digitalWrite(ADELANTE_1, LOW);
+  digitalWrite(ATRAS_2, LOW); 
+  digitalWrite(ATRAS_1, LOW);
+  analogWrite(PWM1, 0);
+  analogWrite(PWM2, 0);
+}
+
+//==========================Funcion de color - TCS34725
+//falta que regrese "GREEN", "BLUE", "YELLOW", "RED"
+String Lcolor(){
+  float red,green,blue;
+  tcs.getRGB(&red,&green,&blue);
+  int R = int(red);
+  int G = int(green);
+  int B = int(blue);
+
+  Serial.print("R: "); Serial.print(R);
+  Serial.print("  G: "); Serial.print(G);
+  Serial.print("  B: "); Serial.println(B);
+
+  String color = "";
+
+    if ((R - G > 50) && (R - B > 50)) {
+      color = "RED";
+    }
+    else if ((G - B <= 8) && (B - R > 23)) {
+      color = "BLUE";
+    }  
+      else if ((G - B > 10) && (G - R > 20)) {
+      color = "GREEN";
+      
+    } else if ((G - B > 30) && (G - R > 15)) {
+      color = "BLANCO";
+    } 
+    else if ((R - B > 10) && (G - B > 20)) {
+      color = "YELLOW";
+    }
+    else if ((R - B > 9) && (R - G > 9)) {
+      color = "PINK";
+
+    } 
+  else{
+      color  = "NADA";
+    }
+
+  if (color == "RED") {
+    analogWrite(Rojillo, 255);
+    analogWrite(Verdesillo, 0);
+    analogWrite(Azulillo, 0);
+  }
+  else if (color == "GREEN") {
+    analogWrite(Rojillo, 0);
+    analogWrite(Verdesillo, 255);
+    analogWrite(Azulillo, 0);
+  }
+  else if (color == "BLUE") {
+    analogWrite(Rojillo, 0);
+    analogWrite(Verdesillo, 0);
+    analogWrite(Azulillo, 255);
+  }
+  else if (color == "YELLOW") {
+    analogWrite(Rojillo, 255);
+    analogWrite(Verdesillo, 215);
+    analogWrite(Azulillo, 0);
+  }
+  else if (color == "PINK") {
+    analogWrite(Rojillo, 255);
+    analogWrite(Verdesillo, 0);
+    analogWrite(Azulillo, 128);
+  }
+  else {
+  analogWrite(Rojillo, 100);
+  analogWrite(Verdesillo, 100);
+  analogWrite(Azulillo, 100);
+  }
+
+  Serial.print("R: "); Serial.print(R);
+  Serial.print("  G: "); Serial.print(G);
+  Serial.print("  B: "); Serial.print(B);
+  Serial.print("  Color: "); Serial.println(color);
+
+  delay(10);
+
+
+  return color;
+}
+
+
+
+//-----------------------------------------------------NARANJA - TCS230
+String Naranja(){
+
+//Sensor de color
+	redPW = getRedPW();
+	// Delay to stabilize sensor
+	delay(10);
+
+	// Read Green Pulse Width
+	greenPW = getGreenPW();
+	// Delay to stabilize sensor
+	delay(10);
+
+	// Read Blue Pulse Width
+	bluePW = getBluePW();
+	// Delay estabilizante sensor
+	delay(10);
+
+	// Print  Serial Monitor
+	Serial.print("Red PW = ");
+	Serial.print(redPW);
+	Serial.print(" - Green PW = ");
+	Serial.print(greenPW);
+	Serial.print(" - Blue PW = ");
+	Serial.println(bluePW);
+
+  String naranja = "";
+//esta calibracion es para ROSA, si funciona o hago correciones en codigo, cambiar solo esta parte
+  if ((redPW >= 123 && redPW <= 165) && 
+    (greenPW >= 180 && greenPW <= 220) && 
+    (bluePW >= 100 && bluePW <= 280)) {
+  
+    naranja = "NARANJA"; //variable "NARANJA"  en la prueba es para el color ROSA
+  }
+  return naranja;
+}
+
+//------------------------------FUNCIONES PARA OBTENER LOS RAWS
+
+int getRedPW() {
+	// Set sensor to read Red only
+	digitalWrite(S2,LOW);
+	digitalWrite(S3,LOW);
+	// Define integer to represent Pulse Width
+	int PW;
+	// Read the output Pulse Width
+	PW = pulseIn(sensorOut, LOW);
+	// Return the value
+	return PW;
+}
+
+// Function to read Green Pulse Widths
+int getGreenPW() {
+	// Set sensor to read Green only
+	digitalWrite(S2,HIGH);
+	digitalWrite(S3,HIGH);
+	// Define integer to represent Pulse Width
+	int PW;
+	// Read the output Pulse Width
+	PW = pulseIn(sensorOut, LOW);
+	// Return the value
+	return PW;
+}
+
+// Function to read Blue Pulse Widths
+int getBluePW() {
+	// Set sensor to read Blue only
+	digitalWrite(S2,LOW);
+	digitalWrite(S3,HIGH);
+	// Define integer to represent Pulse Width
+	int PW;
+	// Read the output Pulse Width
+	PW = pulseIn(sensorOut, LOW);
+	// Return the value
+	return PW;
+}
+
+//-----------------------------------------------------------------NARANJA
+
+
+
+//================================Funcion para leer ultrasonicos
+
+// Lee con mediana; devuelve -1 si no hay eco válido
+int readCm(NewPing &s, uint8_t samples = 5) {
+  unsigned int us = s.ping_median(samples);   // filtra ruido/crosstalk
+  if (us == 0) return -1;                     // sin eco
+  unsigned int cm = s.convert_cm(us);
+  if (cm == 0 || cm > MAX_DISTANCE) return -1; // fuera de rango
+  return (int)cm;
+}
+
+
+void leerUltrasonicos(float &dFront, float &dLeft, float &dRight, float &dBack) {
+  // separa lecturas para evitar crosstalk
+   dFront = readCm(sonarFront); delay(10);
+   dLeft  = readCm(sonarLeft ); delay(10);
+   dRight = readCm(sonarRight); delay(10);
+   dBack  = readCm(sonarBack ); delay(10);
+
+  Serial.print(F("Front: "));
+  if (dFront < 0) Serial.print(F("N/A")); else Serial.print(dFront);
+
+  Serial.print(F(" cm | Left: "));
+  if (dLeft  < 0) Serial.print(F("N/A")); else Serial.print(dLeft);
+
+  Serial.print(F(" cm | Right: "));
+  if (dRight < 0) Serial.print(F("N/A")); else Serial.print(dRight);
+
+  Serial.print(F(" cm | Back: "));
+  if (dBack  < 0) Serial.print(F("N/A")); else Serial.print(dBack);
+
+  Serial.println(F(" cm"));
+
+   // ~10 Hz
+/*
+  dFront = sonarFront.ping_cm(); 
+        if (dFront == 0) dFront = 100; //se supone es la distancia maxima
+  dLeft  = sonarLeft.ping_cm();  
+        if (dLeft  == 0) dLeft  = 100;
+  dRight = sonarRight.ping_cm(); 
+        if (dRight == 0) dRight = 100;
+  dBack = sonarBack.ping_cm(); 
+        if (dBack == 0) dBack = 100;
+
+
+  //          Imprimir las lecturas
+  Serial.print("Front: "); Serial.print(dFront); Serial.print(" cm | ");
+  Serial.print("Left: "); Serial.print(dLeft); Serial.print(" cm | ");
+  Serial.print("Right: "); Serial.print(dRight); Serial.print(" cm | ");
+  Serial.print("Back: "); Serial.print(dBack); Serial.println(" cm");
+*/   
+
+}
+
+
+
+
+//-------------------------------------------FUNCIONES DE LOGICA-------------------
+enum Estado {
+  INICIO,
+  BUSQUEDA, //solamente avanzar hasta tener la pelota y cerrar garra
+  FLAG,
+  KICK,
+  DROP,
+  RECORRIDO, //recorrido en lo que se llega a la siguiente flag
+  FINAL
+};
+Estado EActual = INICIO;
+
+//--------------MILLIS para los Estados de la Maquina---------
+bool esperaMs(uint32_t ms){
+  static uint32_t t0 = 0;     // se recuerda entre llamadas
+  static bool enCurso = false;
+  if (!enCurso){ t0 = millis(); enCurso = true; }
+  if (millis() - t0 >= ms){ enCurso = false; return true; }
+  return false;
+}
+//----------------------fin millis------------------------------------
+
+void recorrido(String color, String naranja,float dFront, float dLeft,float dRight, float dBack){
+
+  switch(EActual){
+
+    case INICIO:
+      if (color == "GREEN"){
+        garra.write(125);
+        EActual = BUSQUEDA; 
+      } 
+      break;
+  
+    case BUSQUEDA:
+      naranja = Naranja(); //refrescamos lectura del naranja
+
+      if(naranja != "NARANJA"){
+        garra.write(100); //abrimos garra
+        DELANTERAS_adelante(vBase); //cero temporal poner el vBase
+        delay(500); //tal vez pueden avanzar hasta encontrarlo? sin necesidad del delay
+        naranja = Naranja(); //refrescamos lectura del naranja
+        EActual = FLAG;
+      } else {
+
+        stop();
+        delay(800); //delay de 200 para que tome la pelota
+        garra.write(65); //momentaneamente garra en 0 es cerr
+        EActual = FLAG;
+      } 
+
+      break;
+  
+  case FLAG:
+        if(color == "YELLOW"){
+        stop();
+        delay(500);
+      
+          EActual = KICK;
+        } else if(color == "BLUE"){
+          EActual = DROP;
+        } else if (color == "DROP"){       //ESTO SE LO AGREGUE DE LTIMO MOMENTO
+          EActual = KICK;
+        } 
+        else if (color != "YELLOW" && color != "BLUE"){
+          EActual = RECORRIDO;
+        } 
+        break;
+
+  case KICK: {
+    static enum {ATRAS, ADELANTE,STOP, ULTRAS} fase = ATRAS;
+    switch(fase){
+
+    case ATRAS:
+        stop();
+        delay(400);
+        garra.write(125);
+        DELANTERAS_atras(70);
+        delay(100);
+          fase = ADELANTE;
+      break;
+
+    case ADELANTE:
+      leerUltrasonicos(dFront, dLeft, dRight, dBack);
+      if (dFront < 12) {    //estaba en 12                     
+        stop();
+        delay(100);
+        fase = STOP;
+      } 
+      else {                                  
+        DELANTERAS_adelante(65); //estaba en 60
+        leerUltrasonicos(dFront, dLeft, dRight, dBack);
+      }
+
+
+      /*
+      if (esperaMs(800)) { 
+        fase = ULTRAS; }
+        */
+      break;
+
+
+      case STOP:
+          stop();
+          delay(2000);
+          DELANTERAS_adelante(70);
+          delay(130);
+          EActual = RECORRIDO;
+          break;
+     }
+
+    /*
+    if (dFront > 8){
+    garra.write(125);  //se abre la garra | la garra se abre en 180 completamente
+    DELANTERAS_atras(80);  //retrocede con velocidad de 80
+    delay(800);
+    DELANTERAS_adelante(100); //avanza con velocidad de 120
+    delay(850);
+    stop();
+    delay(400);
+    leerUltrasonicos(dFront, dLeft, dRight, dBack); //refrescamos la lectra de los U
+    }
+    if (dFront < 5){ //5 cm
+      stop(); 
+      delay(1000);  //este delay es en lo que quitan la pared, no se necesita lectura Ultrasonica
+      EActual = RECORRIDO;
+
+    } */
+    } break;
+  
+  case DROP:
+    leerUltrasonicos(dFront, dLeft, dRight,dBack); //refrescamos la lectra de los U
+
+    if (dFront > 10){ //ver si es suficiente para que la garra este del otro lado
+                    //esto mietras la garra esta cerrada con la pelota
+      DELANTERAS_adelante(vBase);
+    } else if (dFront < 8){
+      stop();
+      delay(700);
+      garra.write(100); //se abre la garra
+      DELANTERAS_atras(vSoft);
+      delay(700);
+      stop();
+      delay(1000);
+
+      EActual = RECORRIDO; //se cambia a recorrido para buscar las banderas o navegar entre el circuito
+
+    }
+    break;
+
+  case RECORRIDO: //recorrido mientras no encontramos FLAG
+    leerUltrasonicos(dFront, dLeft, dRight,dBack); //refrescamos la lectra de los U
+    color = Lcolor(); //se tiene que actualizar la lectura dentro del case
+
+    if (color != "BLUE" && color != "YELLOW"){
+
+      //primer if: vuelta a la derecha
+      if (dFront < 9 && dRight > 30){ //asi entonces aunque vatya recorriendo solo tomara la salida en que ladintacnia sea mas larga para dar vuelta
+        vuelta_Derecha();
+        delay(1000); //ver si es suficiente delay para dar la vuelta
+      } else{
+        DELANTERAS_adelante(vBase);
+      }
+
+      //segundo if vuelta a la IZQUIERDA
+      if (dFront < 9 && dLeft > 30){ 
+        vuelta_Izquierda();
+        delay(1000); //ver si es suficiente delay para dar la vuelta
+      } else{
+        DELANTERAS_adelante(vBase);
+      }
+    } else{
+      EActual = FLAG;
+    }
+  break;
+
+  case FINAL:
+
+  break;
+
+  }
+}
+
+
+//--------------INICIALIZACION DEL PROGRAMA----------------
+
+void setup() {
+  //Punestes H
+  pinMode(ADELANTE_1, OUTPUT);
+  pinMode(ATRAS_1, OUTPUT);
+  pinMode(ADELANTE_2, OUTPUT);
+  pinMode(ATRAS_2, OUTPUT);
+  pinMode(PWM1, OUTPUT);
+  pinMode(PWM2, OUTPUT);
+  //-----------------------------------------------------------puentes H
+
+//-------------------------------------Sensor NARANJA
+  pinMode(S0, OUTPUT);
+	pinMode(S1, OUTPUT);
+	pinMode(S2, OUTPUT);
+	pinMode(S3, OUTPUT);
+
+// Set Pulse Width scaling to 20%
+	digitalWrite(S0,HIGH);
+	digitalWrite(S1,LOW);
+
+// Set Sensor output as input
+	pinMode(sensorOut, INPUT);
+
+
+//servo
+
+  garra.attach(servo_pin); //servo >>> garra // es el pin 10
+
+
+//Sensor de Color
+  if(tcs.begin()){
+    Serial.println("INICIALIZADO: Sensor de color TCS34725");
+    delay(500);   //tiempo de inicializacion
+  }
+  else{
+    Serial.println("Error");
+  }
+//-------------------------------------------------------Sensor de Color
+
+
+  Serial.begin(115200);
+}
+
+
+void loop() {
+
+//--------------------------------------------------------ULTRASONICOS
+  //Variables Ultrasonicas y funcion
+  float dFront,dLeft,dRight,dBack;
+  leerUltrasonicos(dFront,dLeft,dRight,dBack);
+
+  Serial.print(F("Front: ")); if (dFront < 0) Serial.print(F("N/A")); else Serial.print(dFront);
+  Serial.print(F(" cm | Left: ")); if (dLeft < 0) Serial.print(F("N/A")); else Serial.print(dLeft);
+  Serial.print(F(" cm | Right: ")); if (dRight < 0) Serial.print(F("N/A")); else Serial.print(dRight);
+  Serial.print(F(" cm | Back: ")); if (dBack < 0) Serial.print(F("N/A")); else Serial.print(dBack);
+  Serial.println(F(" cm"));
+//--------------------------------------------------------ULTRASONICOS
+
+
+  //variables para Maquina de Estados
+  String TutiColor = Lcolor();
+  String naranja = Naranja();
+
+
+  //Maquina de Estados
+  recorrido(TutiColor, naranja, dFront,dLeft,dRight,dBack); //tal vez solo necesite el frontal aqui
+
+
+}

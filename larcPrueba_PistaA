@@ -329,10 +329,10 @@ int readCm(NewPing &s, uint8_t samples = 5) {
 
 void leerUltrasonicos(float &dFront, float &dLeft, float &dRight, float &dBack) {
   // separa lecturas para evitar crosstalk
-   dFront = readCm(sonarFront); delay(10);
-   dLeft  = readCm(sonarLeft ); delay(10);
-   dRight = readCm(sonarRight); delay(10);
-   dBack  = readCm(sonarBack ); delay(10);
+   dFront = readCm(sonarFront); delay(5);
+   dLeft  = readCm(sonarLeft ); delay(5);
+   dRight = readCm(sonarRight); delay(5);
+   dBack  = readCm(sonarBack ); delay(5);
 
   Serial.print(F("Front: "));
   if (dFront < 0) Serial.print(F("N/A")); else Serial.print(dFront);
@@ -407,7 +407,8 @@ void recorrido(String color, String naranja,float dFront, float dLeft,float dRig
   
     case BUSQUEDA:
       naranja = Naranja(); //refrescamos lectura del naranja
-
+        EActual = FLAG ;
+      /*
       if(naranja != "NARANJA"){
         garra.write(100); //abrimos garra
         DELANTERAS_adelante(vBase); //cero temporal poner el vBase
@@ -421,14 +422,13 @@ void recorrido(String color, String naranja,float dFront, float dLeft,float dRig
         garra.write(65); //momentaneamente garra en 0 es cerr
         EActual = FLAG;
       } 
-
+      */
       break;
   
   case FLAG:
         if(color == "YELLOW"){
         stop();
-        delay(500);
-      
+        delay(500);    
           EActual = KICK;
         } else if(color == "BLUE"){
           EActual = DROP;
@@ -502,8 +502,43 @@ void recorrido(String color, String naranja,float dFront, float dLeft,float dRig
     } break;
   
   case DROP:
-    leerUltrasonicos(dFront, dLeft, dRight,dBack); //refrescamos la lectra de los U
 
+    leerUltrasonicos(dFront, dLeft, dRight,dBack); //refrescamos la lectra de los U
+  static enum {START, ATRAS,STOP, ULTRAS} fase = START;
+      switch(fase){
+
+      case START:
+          garra.write(60);
+          leerUltrasonicos(dFront, dLeft, dRight,dBack); //refrescamos la lectra de los U
+          DELANTERAS_adelante(60);
+          if (dFront < 12){
+            stop();
+            delay(300);
+            fase = ATRAS;
+          }
+        break;
+
+      case ATRAS:
+        leerUltrasonicos(dFront, dLeft, dRight, dBack);
+        stop();
+        delay(200);
+        garra.write(100);
+        stop();
+        delay(200);
+        DELANTERAS_atras(65);
+        delay(120);
+        stop();
+        delay(2000); //esperar a que quiten la pared
+        EActual = RECORRIDO;
+        }
+
+
+      /*
+      if (esperaMs(800)) { 
+        fase = ULTRAS; }
+        */
+
+/*
     if (dFront > 10){ //ver si es suficiente para que la garra este del otro lado
                     //esto mietras la garra esta cerrada con la pelota
       DELANTERAS_adelante(vBase);
@@ -518,7 +553,7 @@ void recorrido(String color, String naranja,float dFront, float dLeft,float dRig
 
       EActual = RECORRIDO; //se cambia a recorrido para buscar las banderas o navegar entre el circuito
 
-    }
+    }*/
     break;
 
   case RECORRIDO: //recorrido mientras no encontramos FLAG

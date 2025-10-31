@@ -169,19 +169,30 @@ String Lcolor(){
 
     if ((R - G > 50) && (R - B > 50)) {
       color = "RED";
+    } else if ((G - B >= 20) && (B == R)) { //pista fake
+      color = "BLUE";
     }
+    /*  //para pista REAL
     else if ((G - B <= 8) && (B - R > 23)) {
       color = "BLUE";
-    }  
+    }  */
       else if ((G - B > 10) && (G - R > 20)) {
       color = "GREEN";
       
-    } else if ((G - B > 30) && (G - R > 15)) {
+    }    else if ((G - R > 5) && (G - B > 35)) { //pista fake
+      color = "BLANCO";
+    } 
+    //pista fake
+      else if ((G - R > -1) && (G - B > 40)) {
+    color = "YELLOW";
+     }
+    
+    /* else if ((G - B > 30) && (G - R > 15)) {
       color = "BLANCO";
     } 
     else if ((R - B > 10) && (G - B > 20)) {
       color = "YELLOW";
-    }
+    }*/
     else if ((R - B > 9) && (R - G > 9)) {
       color = "PINK";
 
@@ -430,10 +441,9 @@ void recorrido(String color, String naranja,float dFront, float dLeft,float dRig
         stop();
         delay(500);    
           EActual = KICK;
-        } else if(color == "BLUE"){
+        } 
+        else if(color == "BLUE"){
           EActual = DROP;
-        } else if (color == "DROP"){       //ESTO SE LO AGREGUE DE LTIMO MOMENTO
-          EActual = KICK;
         } 
         else if (color != "YELLOW" && color != "BLUE"){
           EActual = RECORRIDO;
@@ -508,12 +518,12 @@ void recorrido(String color, String naranja,float dFront, float dLeft,float dRig
       switch(fase){
 
       case START:
-          garra.write(60);
+          garra.write(100); //abrimos garra
+          DELANTERAS_adelante(55); //no se tiene que ir adelante
           leerUltrasonicos(dFront, dLeft, dRight,dBack); //refrescamos la lectra de los U
-          DELANTERAS_adelante(60);
-          if (dFront < 12){
+          if (dFront < 18){
             stop();
-            delay(300);
+            delay(500);
             fase = ATRAS;
           }
         break;
@@ -526,7 +536,7 @@ void recorrido(String color, String naranja,float dFront, float dLeft,float dRig
         stop();
         delay(200);
         DELANTERAS_atras(65);
-        delay(120);
+        delay(800);
         stop();
         delay(2000); //esperar a que quiten la pared
         EActual = RECORRIDO;

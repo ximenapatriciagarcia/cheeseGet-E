@@ -8,18 +8,24 @@ Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS3472
 //AUTHOR: Ximena Patricia Garcia Magdaleno
 //Pista C: Laberinto
 
-//Sensores: Servo, Color abajo, cuatro ultrasonicos, Puentes H, infrarrojos
+
+//--------------------------------
+//--------ORIGINAL y FINAL--------
+//--------------------------------
 
 
+
+//Sensores:Color abajo, cuatro ultrasonicos, Puentes H, infrarrojos
 //ESTRATEGIA: array para infrarrojos "TODOS NEGROS" means "cuadrante negro", retroceder, girar
-
 //COLORES: Azul (fuerte), amarillo, rosa, rojo (checkpoint), verde (inicio && final final)
+
 
 //-------------------------Delcaracion de variables--------------------------------
 //------------------RGB
-int Rojillo = 5;       //van a cambiar porque no son PWM
+int Rojillo = 5;       //van a cambiar porque no son PWM //ya cambiaron
 int Verdesillo = 3;
 int Azulillo = 6;
+
 
 //====Puentes H
 const int ADELANTE_1 = 4; // LLANTA 1: (ADELANTE) 
@@ -30,18 +36,11 @@ const int ADELANTE_2 = 7;
 const int PWM1 = 2;   
 const int PWM2 = 9;
 
+
 //=================================================Variables de velocidad ESTANDAR
-int vBase = 60; //le bajede 85 a 60, para que sea un recorrido suave
+int vBase = 80; //le bajede 85 a 60, para que sea un recorrido suave
 int vGiro = 85;    //estandar para giros
 int vSoft = 70;   //
-
-
-/*     EN ESTA PISTA NO SE NECESITA EL SERVO
-//================Variables=========================Servo
-Servo garra; //creo el objeto para servo
-const int servo_pin = 10;
-*/
-
 
 
 //================Variables=========================Ultrasonicos
@@ -84,7 +83,7 @@ int lecturas[numInfra];
 //-----------------------------
   void leerINFRAS() {
     for (int i = 0; i < numInfra; i++) {
-      lecturas[i] = !digitalRead(pinesIR[i]); // guarda 0 o 1
+      lecturas[i] = !digitalRead(pinesIR[i]); // guarda 0 o 1 tras la lectura 
     }
   }
 //--------------Funcion infrarrojos "TODOS NEGRO"
@@ -99,13 +98,13 @@ bool todosNEGROS(){
 
 
 //-------------------------Funiones Puentes H---------------------------------------------------------
-void DELANTERAS_adelante(int vB) {  // Se le da una variable de parametro en caso de modificarse en el codigo
+void DELANTERAS_adelante() {  // Se le da una variable de parametro en caso de modificarse en el codigo
   digitalWrite(ADELANTE_2, HIGH);   
   digitalWrite(ADELANTE_1, HIGH);
   digitalWrite(ATRAS_2, LOW); 
   digitalWrite(ATRAS_1, LOW);
-  analogWrite(PWM1, vB);
-  analogWrite(PWM2, vB);
+  analogWrite(PWM1, 80);
+  analogWrite(PWM2, 80);
 }
 
 
@@ -172,29 +171,11 @@ void stop() {
   analogWrite(PWM2, 0);
 }
 
-/*
+
 //===================================================
 //=========Funcion de COLOR - TCS34725===============
 //===================================================
-//falta que regrese "GREEN", "BLUE", "YELLOW", "RED"
 
-String Lcolor(){
-  uint16_t R,G,B,C;
-  tcs.getRawData(&R,&G,&B,&C); //ver si con .getEGB() o con .getRawData()
-
-  if (R > G && R > B) return "RED";
-  if (G > R && G > B) return "GREEN";
-  if (B > R && B > G) return "BLUE";
-  if (R > 300 && G > 300) return "YELLOW";
-
-  analogWrite(3, R); // de una vez lo muestro en el RGB para practicar
-  analogWrite(5, G);
-  analogWrite(6, B);
-
-  Serial.println(" R =" + String(R)+ "G = "+String(G) + " B = " +String(B));
-  delay(300);
-}
-*/
 
 
 String Lcolor(){
@@ -308,7 +289,7 @@ void recorrido(String color, float dFront,float dLeft,float dRight, float dBack)
 
   case INICIO:
       if (color == "GREEN"){
-        DELANTERAS_adelante(vBase);
+        DELANTERAS_adelante();
         delay(1600);
         EActual = RECORRIDO; 
       } break;
@@ -328,9 +309,9 @@ void recorrido(String color, float dFront,float dLeft,float dRight, float dBack)
     } 
     else {
         DELANTERAS_atras(70);
-        delay(1600); //suficiente para que salga
+        delay(300); //suficiente para que salga
         vuelta_Izquierda();
-        delay(1350);
+        delay(750);
         
         giro(dFront, dLeft, dRight, dBack); 
     }
@@ -348,19 +329,25 @@ void giro(float dFront, float dLeft, float dRight, float dBack){
 //funcion para dar giros
   //primer if: vuelta a la DERECHA
   if (dFront < 6 && dRight > 6){ //asi entonces aunque vatya recorriendo solo tomara la salida en que ladintacnia sea mas larga para dar vuelta
+    stop();
+    delay(300);
     vuelta_Derecha();
-    delay(1300); //ver si es suficiente delay para dar la vuelta
+    delay(1350); //ver si es suficiente delay para dar la vuelta
   }
 
   //segundo if vuelta a la IZQUIERDA
   else if (dFront < 6 && dLeft > 6){ //tal vez se deba de subir a 7 dependiendo del Robot
+    stop();
+    delay(300);
     vuelta_Izquierda();
-    delay(1300); //ver si es suficiente delay para dar la vuelta
+    delay(1350); //ver si es suficiente delay para dar la vuelta
   } 
 
   else if (dFront < 6 && dLeft < 6 && dRight < 6){
+    stop();
+    delay(300);
     DELANTERAS_atras(70);
-    delay(1600); //suficiente para que salga
+    delay(1300); //suficiente para que salga
 
   } else{ //Else avanza adelante
       DELANTERAS_adelante(vBase); // velocidad Base
@@ -368,7 +355,9 @@ void giro(float dFront, float dLeft, float dRight, float dBack){
 }
 
 
-
+void nivelacion(){
+  //nivelacion con paredes
+}
 
 
 

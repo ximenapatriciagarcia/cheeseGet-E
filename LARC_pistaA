@@ -4,7 +4,7 @@ Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS3472
 #include <NewPing.h>  //libreria para los ultrasonicos
 #include <Servo.h> //Libreria Servo
 
-
+//FINAL
 //AUTHOR: Ximena Patricia Garcia Magdaleno
 //Pista A: banderas AMARILLA:  kick y CELESTE:drop
 //Sensores: Servo, Color frontal, Color abajo, cuatro ultrasonicos, Puentes H
@@ -27,7 +27,7 @@ const int PWM2 = 9;
 
 
 //=================================================Variables de velocidad ESTANDAR
-int vBase = 85; //le bajede 85 a 60, para que sea un recorrido suave
+int vBase = 60; //le bajede 85 a 60, para que sea un recorrido suave
 
 int vGiro = 85; //estandar para giros
 int vSoft = 65; //
@@ -37,7 +37,7 @@ Servo garra; //creo el objeto para servo
 const int servo_pin = 10;
 
 //================Variables=========================Ultrasonicos
-#define MAX_DISTANCE 60 //si hay algo mas lejos que esta distancia el sensorlo ignora
+#define MAX_DISTANCE 200 //si hay algo mas lejos que esta distancia el sensorlo ignora
 
 //De izquierda a derecha >>> GARRA AL FRENTE
 
@@ -62,6 +62,8 @@ NewPing sonarFront(trigPinFront, echoPinFront, MAX_DISTANCE);
 NewPing sonarLeft(trigPinLeft, echoPinLeft, MAX_DISTANCE);
 NewPing sonarRight(trigPinRight, echoPinRight, MAX_DISTANCE);
 NewPing sonarBack(trigPinBack, echoPinBack, MAX_DISTANCE);
+
+
 
 
 //============Variables====================Sensor de Color "naranja"
@@ -144,13 +146,15 @@ void ligero_DE() {
 
 //Stop
 void stop() {
-  digitalWrite(ADELANTE_2, LOW);   
-  digitalWrite(ADELANTE_1, LOW);
-  digitalWrite(ATRAS_2, LOW); 
-  digitalWrite(ATRAS_1, LOW);
+  digitalWrite(ADELANTE_2, HIGH);   
+  digitalWrite(ADELANTE_1, HIGH);
+  digitalWrite(ATRAS_2, HIGH); 
+  digitalWrite(ATRAS_1, HIGH);
   analogWrite(PWM1, 0);
   analogWrite(PWM2, 0);
 }
+
+
 
 //==========================Funcion de color - TCS34725
 //falta que regrese "GREEN", "BLUE", "YELLOW", "RED"
@@ -169,10 +173,23 @@ String Lcolor(){
 
     if ((R - G > 50) && (R - B > 50)) {
       color = "RED";
-    }
-    else if ((G - B > 30) && (B - R > 5)) {
+    } 
+      //para pista REAL
+    else if ((B == G)) {
       color = "BLUE";
-    }
+    } 
+    
+    /*
+    else if ((G - B <= 8) && (B - R > 23)) {
+      color = "BLUE";
+    }  */
+      else if ((G - B > 10) && (G - R > 20)) {
+      color = "GREEN";
+      
+    }   
+    else if ((G - R >+ 8) && (G - B > 20)) {
+      color = "BLANCO";
+    } 
     else if ((R - B > 10) && (G - B > 20)) {
       color = "YELLOW";
     }
@@ -180,9 +197,7 @@ String Lcolor(){
       color = "PINK";
 
     } 
-    else if ((G - B > 10) && (G - R > 20)) {
-      color = "GREEN";
-    } else{
+  else{
       color  = "NADA";
     }
 
@@ -232,21 +247,21 @@ String Lcolor(){
 
 //-----------------------------------------------------NARANJA - TCS230
 String Naranja(){
-
+/* // se hace omision del cierre de la garra con color porque retrasa lecturas del Ultrasonico
 //Sensor de color
 	redPW = getRedPW();
 	// Delay to stabilize sensor
-	delay(10);
+
 
 	// Read Green Pulse Width
 	greenPW = getGreenPW();
 	// Delay to stabilize sensor
-	delay(10);
+	
 
 	// Read Blue Pulse Width
 	bluePW = getBluePW();
 	// Delay estabilizante sensor
-	delay(10);
+
 
 	// Print  Serial Monitor
 	Serial.print("Red PW = ");
@@ -258,54 +273,39 @@ String Naranja(){
 
   String naranja = "";
 //esta calibracion es para ROSA, si funciona o hago correciones en codigo, cambiar solo esta parte
-  if ((redPW >= 80 && redPW <= 100) && 
-    (greenPW >= 140 && greenPW <= 170) && 
-    (bluePW >= 110 && bluePW <= 160)) {
   
-    naranja = "NARANJA"; //variable "NARANJA"  en la prueba es para el color ROSA
+  if ((redPW >= 123 && redPW <= 165) && 
+    (greenPW >= 180 && greenPW <= 220) && 
+    (bluePW >= 100 && bluePW <= 280)) {
+  
+    naranja = "NARANJA"; //variable "NARANJA"  en la prueba es para el parametros de  color ROSA claro
   }
-  return naranja;
-}
+  return naranja;*/
+} 
 
 //------------------------------FUNCIONES PARA OBTENER LOS RAWS
 
 int getRedPW() {
-	// Set sensor to read Red only
-	digitalWrite(S2,LOW);
-	digitalWrite(S3,LOW);
-	// Define integer to represent Pulse Width
-	int PW;
-	// Read the output Pulse Width
-	PW = pulseIn(sensorOut, LOW);
-	// Return the value
-	return PW;
+  digitalWrite(S2, LOW);
+  digitalWrite(S3, LOW);
+  delayMicroseconds(200);                
+  return pulseIn(sensorOut, LOW, 30000UL); 
 }
 
-// Function to read Green Pulse Widths
 int getGreenPW() {
-	// Set sensor to read Green only
-	digitalWrite(S2,HIGH);
-	digitalWrite(S3,HIGH);
-	// Define integer to represent Pulse Width
-	int PW;
-	// Read the output Pulse Width
-	PW = pulseIn(sensorOut, LOW);
-	// Return the value
-	return PW;
+  digitalWrite(S2, HIGH);
+  digitalWrite(S3, HIGH);
+  delayMicroseconds(200);
+  return pulseIn(sensorOut, LOW, 30000UL);
 }
 
-// Function to read Blue Pulse Widths
 int getBluePW() {
-	// Set sensor to read Blue only
-	digitalWrite(S2,LOW);
-	digitalWrite(S3,HIGH);
-	// Define integer to represent Pulse Width
-	int PW;
-	// Read the output Pulse Width
-	PW = pulseIn(sensorOut, LOW);
-	// Return the value
-	return PW;
+  digitalWrite(S2, LOW);
+  digitalWrite(S3, HIGH);
+  delayMicroseconds(200);
+  return pulseIn(sensorOut, LOW, 30000UL);
 }
+
 
 //-----------------------------------------------------------------NARANJA
 
@@ -313,10 +313,56 @@ int getBluePW() {
 
 //================================Funcion para leer ultrasonicos
 
+// Se lee con mediana para debolver -1 si no en encuentra nada
+int readCm(NewPing &s, uint8_t samples = 5) {
+  unsigned int us = s.ping_median(samples);   // filtra ruido/crosstalk
+  if (us == 0) return -1;                     // sin eco
+  unsigned int cm = s.convert_cm(us);
+  if (cm == 0 || cm > MAX_DISTANCE) return -1; // fuera de rango
+  return (int)cm;
+}
+// === Lectura rapida del frontal con espaciamiento (~50 ms) y cache ===
+int leerFrontCm() {
+  static uint32_t tLast = 0;
+  static int lastCm = -1;
+  if (millis() - tLast < 25) return lastCm;   // respeta tiempo entre pings
+  tLast = millis();
+
+  unsigned int us = sonarFront.ping();        // un solo ping (rápido)
+  if (us == 0) { lastCm = -1; return lastCm; }
+
+  unsigned int cm = us / 58;
+  if (cm == 0 || cm > MAX_DISTANCE) { lastCm = -1; return lastCm; }
+
+  lastCm = (int)cm;
+  return lastCm;
+}
+
 void leerUltrasonicos(float &dFront, float &dLeft, float &dRight, float &dBack) {
-  
+  // separa lecturas para evitar crosstalk
+   dFront = readCm(sonarFront); 
+   dLeft  = readCm(sonarLeft );
+   dRight = readCm(sonarRight); 
+   dBack  = readCm(sonarBack ); 
+
+  Serial.print(F("Front: "));
+  if (dFront < 0) Serial.print(F("N/A")); else Serial.print(dFront);
+
+  Serial.print(F(" cm  > Left: "));
+  if (dLeft  < 0) Serial.print(F("N/A")); else Serial.print(dLeft);
+
+  Serial.print(F(" cm > Right: "));
+  if (dRight < 0) Serial.print(F("N/A")); else Serial.print(dRight);
+
+  Serial.print(F(" cm > Back: "));
+  if (dBack  < 0) Serial.print(F("N/A")); else Serial.print(dBack);
+
+  Serial.println(F(" cm"));
+
+ 
+/*
   dFront = sonarFront.ping_cm(); 
-        if (dFront == 0) dFront = 100; //se supone es la distancia maxima
+        if (dFront == 0) dFront = 100; //es la distancia maxima en caso del leer zeros
   dLeft  = sonarLeft.ping_cm();  
         if (dLeft  == 0) dLeft  = 100;
   dRight = sonarRight.ping_cm(); 
@@ -326,11 +372,12 @@ void leerUltrasonicos(float &dFront, float &dLeft, float &dRight, float &dBack) 
 
 
   //          Imprimir las lecturas
-  Serial.print("Front: "); Serial.print(dFront); Serial.print(" cm | ");
-  Serial.print("Left: "); Serial.print(dLeft); Serial.print(" cm | ");
-  Serial.print("Right: "); Serial.print(dRight); Serial.print(" cm | ");
+  Serial.print("Front: "); Serial.print(dFront); Serial.print(" cm  ");
+  Serial.print("Left: "); Serial.print(dLeft); Serial.print(" cm  ");
+  Serial.print("Right: "); Serial.print(dRight); Serial.print(" cm  ");
   Serial.print("Back: "); Serial.print(dBack); Serial.println(" cm");
-    
+*/   
+
 }
 
 
@@ -344,9 +391,19 @@ enum Estado {
   KICK,
   DROP,
   RECORRIDO, //recorrido en lo que se llega a la siguiente flag
-  FINAL
+  FINAL // lo cambie a que se lea en el case del "recorrido"
 };
 Estado EActual = INICIO;
+
+//--------------MILLIS para los Estados de la Maquina---------
+bool esperaMs(uint32_t ms){
+  static uint32_t t0 = 0;     // se recuerda entre llamadas
+  static bool enCurso = false; //booleano
+  if (!enCurso){ t0 = millis(); enCurso = true; }
+  if (millis() - t0 >= ms){ enCurso = false; return true; }
+  return false;
+}
+//----------------------fin millis------------------------------------
 
 void recorrido(String color, String naranja,float dFront, float dLeft,float dRight, float dBack){
 
@@ -361,7 +418,8 @@ void recorrido(String color, String naranja,float dFront, float dLeft,float dRig
   
     case BUSQUEDA:
       naranja = Naranja(); //refrescamos lectura del naranja
-
+        EActual = FLAG ;
+      /*
       if(naranja != "NARANJA"){
         garra.write(100); //abrimos garra
         DELANTERAS_adelante(vBase); //cero temporal poner el vBase
@@ -375,44 +433,143 @@ void recorrido(String color, String naranja,float dFront, float dLeft,float dRig
         garra.write(65); //momentaneamente garra en 0 es cerr
         EActual = FLAG;
       } 
+      */
       break;
   
   case FLAG:
-        if(color == "YELLOW"){
+        if(color == "YELLOW"){    
           EActual = KICK;
-        } else if(color == "BLUE"){
+        } 
+        else if(color == "BLUE"){
           EActual = DROP;
-        } else if (color != "YELLOW" && color != "BLUE"){
+        } 
+        else if (color != "YELLOW" && color != "BLUE"){
           EActual = RECORRIDO;
-        }
+        } 
         break;
 
-  case KICK:
+  case KICK: {
+    static enum {ATRAS, ADELANTE,STOP, ULTRAS} fase = ADELANTE;
+    switch(fase){
 
-    garra.write(125);  //se abre la garra la garra se abre en 180 completamente
-    DELANTERAS_atras(120);  //retrocede con velocidad de 80
-    delay(200);
-    DELANTERAS_adelante(150); //avanza con velocidad de 120
-    delay(250);
+    case ATRAS:
+      if (naranja = "NARANJA"){
+        garra.write(60);
+      } else{
+        garra.write(100);
+      } /*
+        stop();
+        delay(800);
+        garra.write(100);
+        DELANTERAS_atras(70);
+        delay(500);
+          fase = ADELANTE;
+      break;
+            */
+    case ADELANTE:
+      stop();
+      delay(600);
+      garra.write(100);
+      DELANTERAS_atras(60);
+      delay(500);
+      DELANTERAS_adelante(60);
+      dFront = leerFrontCm();
+      if (dFront > 0 && dFront < 12) {    //estaba en 12
+        stop();
+        delay(2000);                           
+        //fase = STOP;
+        DELANTERAS_adelante(70);
+        delay(500);
+        EActual = RECORRIDO;
+      } 
+      else {                                  
+        DELANTERAS_adelante(65); //estaba en 60
+        //leerUltrasonicos(dFront, dLeft, dRight, dBack);
+      }
+
+
+      /*
+      if (esperaMs(800)) { 
+        fase = ULTRAS; }
+        */
+      break;
+
+
+      case STOP:
+          stop();
+          delay(2000);
+          DELANTERAS_adelante(70);
+          delay(130);
+          EActual = RECORRIDO;
+          break;
+     }
+
+    /*
+    if (dFront > 8){
+    garra.write(125);  //se abre la garra | la garra se abre en 180 completamente
+    DELANTERAS_atras(80);  //retrocede con velocidad de 80
+    delay(800);
+    DELANTERAS_adelante(100); //avanza con velocidad de 120
+    delay(850);
     stop();
-    delay(100);
+    delay(400);
     leerUltrasonicos(dFront, dLeft, dRight, dBack); //refrescamos la lectra de los U
-    if (dFront < 6){ //5 cm
+    }
+    if (dFront < 5){ //5 cm
       stop(); 
-      delay(800);  //este delay es en lo que quitan la pared, no se necesita lectura Ultrasonica
-      DELANTERAS_adelante(vBase);
-      delay(200);
+      delay(1000);  //este delay es en lo que quitan la pared, no se necesita lectura Ultrasonica
       EActual = RECORRIDO;
 
+    } */
     } break;
   
-  case DROP:
-    leerUltrasonicos(dFront, dLeft, dRight,dBack); //refrescamos la lectra de los U
 
+
+  
+  case DROP:
+
+	leerUltrasonicos(dFront, dLeft, dRight,dBack); //refrescamos la lectra de los U
+  static enum {START, ATRAS,STOP, ULTRAS} fase = START;
+      switch(fase){
+
+      case START:
+          garra.write(100); //abrimos garra
+          DELANTERAS_adelante(60);
+          leerUltrasonicos(dFront, dLeft, dRight,dBack); //refrescamos la lectra de los U
+          if (dFront < 15){
+            stop();
+            delay(800);
+            fase = ATRAS;
+          }
+        break;
+
+      case ATRAS:
+        leerUltrasonicos(dFront, dLeft, dRight, dBack);
+        stop();
+        delay(400);
+        garra.write(100);
+        stop();
+        delay(400);
+        DELANTERAS_atras(65);
+        delay(350);
+        stop();
+        delay(2000); //esperar a que quiten la pared
+        DELANTERAS_adelante(60);
+        delay(580);
+        EActual = RECORRIDO;
+        }
+
+
+      /*  // lo cambie nuevamente a delays
+      if (esperaMs(800)) { 
+        fase = ULTRAS; }
+        */
+
+/*
     if (dFront > 10){ //ver si es suficiente para que la garra este del otro lado
                     //esto mietras la garra esta cerrada con la pelota
       DELANTERAS_adelante(vBase);
-    } else if (dFront < 10){
+    } else if (dFront < 8){
       stop();
       delay(700);
       garra.write(100); //se abre la garra
@@ -423,27 +580,27 @@ void recorrido(String color, String naranja,float dFront, float dLeft,float dRig
 
       EActual = RECORRIDO; //se cambia a recorrido para buscar las banderas o navegar entre el circuito
 
-    }
+    }*/
     break;
 
   case RECORRIDO: //recorrido mientras no encontramos FLAG
     leerUltrasonicos(dFront, dLeft, dRight,dBack); //refrescamos la lectra de los U
     color = Lcolor(); //se tiene que actualizar la lectura dentro del case
-
     if (color != "BLUE" && color != "YELLOW"){
 
       //primer if: vuelta a la derecha
-      if (dFront < 9 && dRight > 12){ //asi entonces aunque vatya recorriendo solo tomara la salida en que ladintacnia sea mas larga para dar vuelta
+      if (dFront < 8 && dRight > 16 && dLeft < dRight){ //asi entonces aunque vatya recorriendo solo tomara la salida en que ladintacnia sea mas larga para dar vuelta
         vuelta_Derecha();
-        delay(1350); //ver si es suficiente delay para dar la vuelta
+        delay(1600); //ver si es suficiente delay para dar la vuelta //con baterias arriba del 7.8 V funciona
+
       } else{
         DELANTERAS_adelante(vBase);
+
       }
 
       //segundo if vuelta a la IZQUIERDA
-      if (dFront < 9 && dLeft > 12){ 
-        vuelta_Izquierda();
-        delay(1350); //ver si es suficiente delay para dar la vuelta
+      if (dFront < 8 && dLeft > 16 && dLeft > dRight){
+		vuelta_Izquierda();        delay(1600); //ver si es suficiente delay para dar la vuelta
       } else{
         DELANTERAS_adelante(vBase);
       }
@@ -470,7 +627,7 @@ void setup() {
   pinMode(ATRAS_2, OUTPUT);
   pinMode(PWM1, OUTPUT);
   pinMode(PWM2, OUTPUT);
-  //-----------------------------------------------------------puentes H
+//-----------------------------------------------------------puentes H
 
 //-------------------------------------Sensor NARANJA
   pinMode(S0, OUTPUT);
@@ -480,7 +637,7 @@ void setup() {
 
 // Set Pulse Width scaling to 20%
 	digitalWrite(S0,HIGH);
-	digitalWrite(S1,LOW);
+	digitalWrite(S1,HIGH);
 
 // Set Sensor output as input
 	pinMode(sensorOut, INPUT);
@@ -513,14 +670,7 @@ void loop() {
   float dFront,dLeft,dRight,dBack;
   leerUltrasonicos(dFront,dLeft,dRight,dBack);
 
-  Serial.print(F("Front: ")); if (dFront < 0) Serial.print(F("N/A")); else Serial.print(dFront);
-  Serial.print(F(" cm | Left: ")); if (dLeft < 0) Serial.print(F("N/A")); else Serial.print(dLeft);
-  Serial.print(F(" cm | Right: ")); if (dRight < 0) Serial.print(F("N/A")); else Serial.print(dRight);
-  Serial.print(F(" cm | Back: ")); if (dBack < 0) Serial.print(F("N/A")); else Serial.print(dBack);
-  Serial.println(F(" cm"));
 //--------------------------------------------------------ULTRASONICOS
-
-
   //variables para Maquina de Estados
   String TutiColor = Lcolor();
   String naranja = Naranja();
